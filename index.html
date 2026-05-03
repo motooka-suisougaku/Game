@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D Cyber Runner - Tap Edition</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; }
+        #ui { position: absolute; top: env(safe-area-inset-top, 20px); left: 20px; color: #0ff; font-size: 24px; pointer-events: none; text-shadow: 0 0 10px #0ff; }
+        #msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+               color: #f0f; font-size: 32px; text-align: center; display: none; cursor: pointer; 
+               background: rgba(0,0,0,0.8); padding: 20px; border: 2px solid #f0f; border-radius: 10px; z-index: 10; }
+        /* タップガイド（視覚的なヒント） */
+        .tap-zone { position: absolute; top: 0; width: 50%; height: 100%; opacity: 0; z-index: 5; }
+        #left-zone { left: 0; }
+        #right-zone { right: 0; }
+    </style>
+</head>
+<body>
+    <div id="ui">SCORE: <span id="score">0</span></div>
+    <div id="msg">GAME OVER<br><span style="font-size:20px">TAP TO RESTART</span></div>
+    
+    <div id="left-zone" class="tap-zone"></div>
+    <div id="right-zone" class="tap-zone"></div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        let scene, camera, renderer, player, obstacles = [];
+        let score = 0;
+        let isGameOver = false;
+        let speed = 0.6;
+        let targetX = 0;
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x000000, 10, 60);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 3, 6);
+            camera.lookAt(0, 0, -5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            // プレイヤー（ネオン・トライアングル）
+            const geo = new THREE.ConeGeometry(0.5, 1.2, 3);
+            const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true });
+            player = new THREE.Mesh(geo, mat);
+            player.rotation.x = Math.PI / 2;
+            player.position.y = 0.5;
+            scene.add(player);
+
+            // 地面
+            const grid = new THREE.GridHelper(400, 80, 0xff00ff, 0x222222);
+            grid.position.z = -100;
+            scene.add(grid);
+
+            // 操作イベント
+            document.getElementById('left-zone').addEventListener('pointerdown', () => movePlayer(-2));
+            document.getElementById('right-zone').addEventListener('pointerdown', () => movePlayer(2));
+            document.getElementById('msg').addEventListener('click', () => location.reload());
+            
+            // キーボードも一応残しておく
+            document.addEventListener('keydown', (e) => {
+                if(e.key === 'ArrowLeft') movePlayer(-2);
+                if(e.key === 'ArrowRight') movePlayer(2);
+            });
+
+            spawnObstacle();
+            animate();
+        }
+
+        function movePlayer(offset) {
+            if (isGameOver) return;
+            targetX = Math.max(-4, Math.min(4, targetX + offset));
+        }
+
+        function spawnObstacle() {
+            if (isGameOver) return;
+            const geo = new THREE.BoxGeometry(1.8, 1.8, 1.8);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xff0055, wireframe: true });
+            const box = new THREE.Mesh(geo, mat);
+            
+            const lanes = [-4, -2, 0, 2, 4];
+            box.position.set(lanes[Math.floor(Math.random() * lanes.length)], 0.9, -60);
+            scene.add(box);
+            obstacles.push(box);
+
+            const nextSpawn = Math.max(150, 800 - (score / 10));
+            setTimeout(spawnObstacle, nextSpawn);
+        }
+
+        function animate() {
+            if (isGameOver) return;
+            requestAnimationFrame(animate);
+
+            score++;
+            speed += 0.0002;
+            document.getElementById('score').innerText = Math.floor(score / 10);
+
+            // プレイヤーの移動を滑らかに（Lerp）
+            player.position.x += (targetX - player.position.x) * 0.2;
+            player.rotation.z = (player.position.x - targetX) * 0.5; // 傾く演出
+
+            // 障害物の更新
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].position.z += speed;
+                obstacles[i].rotation.y += 0.02;
+
+                // 当たり判定
+                const dx = Math.abs(obstacles[i].position.x - player.position.x);
+                const dz = Math.abs(obstacles[i].position.z - player.position.z);
+                if (dx < 1.2 && dz < 1.2) {
+                    isGameOver = true;
+                    document.getElementById('msg').style.display = 'block';
+                }
+
+                if (obstacles[i].position.z > 10) {
+                    scene.remove(obstacles[i]);
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        init();
+    </script>
+</body>
+</html>
