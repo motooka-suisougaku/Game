@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>JS SURVIVOR - MUZOU EDITION</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050510; font-family: sans-serif; touch-action: none; color: white; user-select: none; }
+        canvas { display: block; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); z-index: 20; }
+        .hidden { display: none !important; }
+        h1 { font-size: 40px; color: #ffcc00; margin-bottom: 10px; text-shadow: 0 0 20px #ffcc00; }
+        select, button { font-size: 18px; padding: 12px 24px; margin: 8px; border-radius: 8px; background: #1a1a2e; color: white; border: 1px solid #444; cursor: pointer; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; pointer-events: none; z-index: 10; }
+        .stats { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; }
+        #exp-bg { width: 100%; height: 8px; background: #222; border-radius: 4px; margin-top: 8px; border: 1px solid #333; }
+        #exp-bar { width: 0%; height: 100%; background: #00ffcc; transition: width 0.1s; }
+        .skill-card { background: #222; border: 2px solid #444; border-radius: 10px; padding: 15px; margin: 10px; width: 280px; text-align: center; cursor: pointer; }
+        .skill-card:hover { border-color: #00ffcc; background: #2a2a3a; }
+        #boss-notice { position: absolute; top: 20%; width: 100%; text-align: center; font-size: 48px; color: red; font-weight: bold; text-shadow: 2px 2px 0 #000; display: none; z-index: 30; }
+    </style>
+</head>
+<body>
+
+    <div id="screen-home" class="overlay">
+        <h1>JS SURVIVOR</h1>
+        <p>3分経過でボス登場！雑魚は一撃！</p>
+        <select id="stage-select"></select>
+        <button id="btn-start">START</button>
+    </div>
+
+    <div id="screen-levelup" class="overlay hidden">
+        <h2 style="color:#00ffcc">LEVEL UP!</h2>
+        <div id="skill-container"></div>
+    </div>
+
+    <div id="screen-result" class="overlay hidden">
+        <h1 id="res-title">FINISH</h1>
+        <p>SCORE: <span id="res-score">0</span></p>
+        <button id="btn-restart">HOME</button>
+    </div>
+
+    <div id="ui-layer" class="hidden">
+        <div class="stats">
+            <div>Lv. <span id="ui-level">1</span></div>
+            <div id="timer" style="color:#ff4444">05:00</div>
+            <div>SCORE: <span id="ui-score">0</span></div>
+        </div>
+        <div id="exp-bg"><div id="exp-bar"></div></div>
+    </div>
+
+    <div id="boss-notice">BOSS APPEARED!!</div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const stageSelect = document.getElementById('stage-select');
+        for(let i=1; i<=30; i++) {
+            let opt = document.createElement('option');
+            opt.value = i; opt.innerText = `STAGE ${i}`;
+            stageSelect.appendChild(opt);
+        }
+
+        let width, height, state = 'HOME', playTime = 300, score = 0, frameCount = 0;
+        let isBossActive = false, bossDefeated = false;
+        let player, enemies, bullets, gems, orbits, damageTexts;
+        let targetPos = { x: 0, y: 0 };
+
+        function resize() {
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = width; canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const skillPool = [
+            { id: 'multi', name: '連射', desc: '弾が扇状に増える' },
+            { id: 'power', name: '威力', desc: '攻撃ダメージ大幅UP' },
+            { id: 'orbit', name: 'バリア', desc: '周囲を回る守護石' },
+            { id: 'magnet', name: '磁石', desc: '経験値の回収範囲UP' },
+            { id: 'speed', name: '加速', desc: '移動速度が上がる' },
+            { id: 'heal', name: '回復', desc: 'HPを50%回復する' }
+        ];
+
+        function initGame() {
+            player = {
+                x: width/2, y: height/2, size: 15, hp: 100, maxHp: 100,
+                level: 1, exp: 0, maxExp: 3, // 最初は3個拾うだけでLvアップ！
+                stats: { multi: 1, power: 15, speed: 4, orbit: 0, magnet: 120 }
+            };
+            enemies = []; bullets = []; gems = []; orbits = []; damageTexts = [];
+            score = 0; playTime = 300; frameCount = 0;
+            isBossActive = false; bossDefeated = false;
+            state = 'PLAYING';
+            targetPos = { x: width/2, y: height/2 };
+            document.querySelectorAll('.overlay').forEach(s => s.classList.add('hidden'));
+            document.getElementById('ui-layer').classList.remove('hidden');
+            document.getElementById('boss-notice').style.display = 'none';
+            loop();
+        }
+
+        function spawnEnemy() {
+            // ボスがいる間、またはボスを倒した直後は雑魚を出さない
+            if (isBossActive) return;
+
+            let x, y;
+            if (Math.random() < 0.5) {
+                x = Math.random() < 0.5 ? -30 : width + 30; y = Math.random() * height;
+            } else {
+                x = Math.random() * width; y = Math.random() < 0.5 ? -30 : height + 30;
+            }
+            
+            // 初期の敵HPを10に。プレイヤー攻撃15なので1発！
+            let stageIdx = parseInt(stageSelect.value);
+            let hp = 10 * (1 + (300 - playTime)/100) * (1 + stageIdx*0.1);
+            enemies.push({ x, y, size: 12, hp: hp, maxHp: hp, speed: 1.5 + (300-playTime)/150, isBoss: false });
+        }
+
+        function spawnBoss() {
+            isBossActive = true;
+            document.getElementById('boss-notice').style.display = 'block';
+            setTimeout(() => document.getElementById('boss-notice').style.display = 'none', 3000);
+            
+            enemies = []; // 雑魚消去
+            let stageIdx = parseInt(stageSelect.value);
+            enemies.push({
+                x: width/2, y: -100, size: 60,
+                hp: 3000 * (1 + stageIdx*0.3), maxHp: 3000 * (1 + stageIdx*0.3),
+                speed: 1.0, isBoss: true
+            });
+        }
+
+        function triggerLevelUp() {
+            state = 'LEVELUP';
+            player.level++;
+            player.exp -= player.maxExp;
+            // 爆速レベルアップ曲線
+            player.maxExp = Math.floor(3 + player.level * 1.5);
+            
+            document.getElementById('ui-level').innerText = player.level;
+            const container = document.getElementById('skill-container');
+            container.innerHTML = '';
+            [...skillPool].sort(() => 0.5 - Math.random()).slice(0, 3).forEach(s => {
+                let div = document.createElement('div');
+                div.className = 'skill-card';
+                div.innerHTML = `<strong>${s.name}</strong><p>${s.desc}</p>`;
+                div.onclick = () => {
+                    if(s.id === 'multi') player.stats.multi++;
+                    if(s.id === 'power') player.stats.power += 10;
+                    if(s.id === 'orbit') player.stats.orbit++;
+                    if(s.id === 'magnet') player.stats.magnet += 60;
+                    if(s.id === 'speed') player.stats.speed += 0.5;
+                    if(s.id === 'heal') player.hp = Math.min(player.maxHp, player.hp + 50);
+                    state = 'PLAYING';
+                    document.getElementById('screen-levelup').classList.add('hidden');
+                    loop();
+                };
+                container.appendChild(div);
+            });
+            document.getElementById('screen-levelup').classList.remove('hidden');
+        }
+
+        function update() {
+            if(state !== 'PLAYING') return;
+            frameCount++;
+
+            // 1秒に1回の更新
+            if(frameCount % 60 === 0) {
+                playTime--;
+                // 3分経過（残り120秒以下）でボス出現判定
+                if(playTime <= 180 && !isBossActive && !bossDefeated) {
+                    spawnBoss();
+                }
+                if(playTime <= 0) end(true);
+            }
+
+            // プレイヤー移動
+            player.x += (targetPos.x - player.x) * 0.1 * (player.stats.speed/4);
+            player.y += (targetPos.y - player.y) * 0.1 * (player.stats.speed/4);
+
+            // 射撃
+            if(frameCount % 15 === 0 && enemies.length > 0) {
+                let target = enemies[0];
+                let minDist = Math.hypot(player.x-target.x, player.y-target.y);
+                enemies.forEach(e => {
+                    let d = Math.hypot(player.x-e.x, player.y-e.y);
+                    if(d < minDist) { minDist = d; target = e; }
+                });
+                let angle = Math.atan2(target.y-player.y, target.x-player.x);
+                for(let i=0; i<player.stats.multi; i++){
+                    let a = angle + (i - (player.stats.multi-1)/2) * 0.2;
+                    bullets.push({x: player.x, y: player.y, vx: Math.cos(a)*10, vy: Math.sin(a)*10, life: 60, dmg: player.stats.power});
+                }
+            }
+
+            // 敵湧き
+            if(!isBossActive && frameCount % 20 === 0) spawnEnemy();
+
+            // バリア更新
+            orbits = [];
+            for(let i=0; i<player.stats.orbit; i++) {
+                let a = (frameCount * 0.1) + (i * Math.PI*2 / player.stats.orbit);
+                orbits.push({x: player.x + Math.cos(a)*70, y: player.y + Math.sin(a)*70, size: 8});
+            }
+
+            // 当たり判定
+            bullets.forEach((b, bi) => {
+                b.x += b.vx; b.y += b.vy; b.life--;
+                if(b.life <= 0) bullets.splice(bi, 1);
+            });
+
+            enemies.forEach((e, ei) => {
+                let angle = Math.atan2(player.y-e.y, player.x-e.x);
+                e.x += Math.cos(angle) * e.speed;
+                e.y += Math.sin(angle) * e.speed;
+
+                bullets.forEach((b, bi) => {
+                    if(Math.hypot(e.x-b.x, e.y-b.y) < e.size + 5) {
+                        e.hp -= b.dmg;
+                        damageTexts.push({x: e.x, y: e.y, text: Math.floor(b.dmg), life: 20});
+                        bullets.splice(bi, 1);
+                    }
+                });
+
+                orbits.forEach(o => {
+                    if(Math.hypot(e.x-o.x, e.y-o.y) < e.size + o.size && frameCount % 10 === 0) {
+                        e.hp -= player.stats.power;
+                        damageTexts.push({x: e.x, y: e.y, text: Math.floor(player.stats.power), life: 20});
+                    }
+                });
+
+                if(e.hp <= 0) {
+                    if(e.isBoss) { 
+                        isBossActive = false; bossDefeated = true; 
+                        score += 5000; playTime = Math.min(playTime, 30); 
+                    }
+                    gems.push({x: e.x, y: e.y, val: e.isBoss ? 50 : 1});
+                    enemies.splice(ei, 1);
+                    score += 10;
+                }
+                if(Math.hypot(player.x-e.x, player.y-e.y) < player.size + e.size) {
+                    player.hp -= 0.5;
+                    if(player.hp <= 0) end(false);
+                }
+            });
+
+            gems.forEach((g, gi) => {
+                let d = Math.hypot(player.x-g.x, player.y-g.y);
+                if(d < player.stats.magnet) {
+                    let a = Math.atan2(player.y-g.y, player.x-g.x);
+                    g.x += Math.cos(a)*12; g.y += Math.sin(a)*12;
+                }
+                if(d < 20) {
+                    player.exp += g.val; gems.splice(gi, 1);
+                    if(player.exp >= player.maxExp) triggerLevelUp();
+                }
+            });
+
+            damageTexts.forEach((d, i) => { d.y--; d.life--; if(d.life <= 0) damageTexts.splice(i, 1); });
+
+            // UI
+            let m = Math.floor(playTime/60), s = playTime%60;
+            document.getElementById('timer').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            document.getElementById('ui-score').innerText = score;
+            document.getElementById('exp-bar').style.width = (player.exp/player.maxExp*100) + "%";
+            document.getElementById('ui-level').innerText = player.level;
+        }
+
+        function draw() {
+            ctx.fillStyle = "rgba(10, 10, 20, 0.4)";
+            ctx.fillRect(0, 0, width, height);
+
+            gems.forEach(g => { ctx.fillStyle = "#0f8"; ctx.beginPath(); ctx.arc(g.x, g.y, 4, 0, Math.PI*2); ctx.fill(); });
+            bullets.forEach(b => { ctx.fillStyle = "#ff0"; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill(); });
+            orbits.forEach(o => { ctx.fillStyle = "#0ff"; ctx.beginPath(); ctx.arc(o.x, o.y, o.size, 0, Math.PI*2); ctx.fill(); });
+            enemies.forEach(e => {
+                ctx.fillStyle = e.isBoss ? "#f0f" : "#f44";
+                ctx.fillRect(e.x-e.size, e.y-e.size, e.size*2, e.size*2);
+                ctx.fillStyle = "red"; ctx.fillRect(e.x-e.size, e.y-e.size-10, e.size*2*(e.hp/e.maxHp), 4);
+            });
+
+            ctx.fillStyle = "#09f"; ctx.beginPath(); ctx.arc(player.x, player.y, player.size, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#f00"; ctx.fillRect(player.x-20, player.y+22, 40, 5);
+            ctx.fillStyle = "#0f0"; ctx.fillRect(player.x-20, player.y+22, 40*(player.hp/player.maxHp), 5);
+
+            ctx.fillStyle = "white"; ctx.textAlign = "center";
+            damageTexts.forEach(d => ctx.fillText(d.text, d.x, d.y));
+        }
+
+        function end(win) {
+            state = 'RESULT';
+            document.getElementById('screen-result').classList.remove('hidden');
+            document.getElementById('res-title').innerText = win ? "CLEAR!" : "GAME OVER";
+            document.getElementById('res-score').innerText = score;
+        }
+
+        function loop() { if(state === 'PLAYING') { update(); draw(); requestAnimationFrame(loop); } }
+
+        window.addEventListener('mousemove', e => { targetPos.x = e.clientX; targetPos.y = e.clientY; });
+        window.addEventListener('touchmove', e => { targetPos.x = e.touches[0].clientX; targetPos.y = e.touches[0].clientY; });
+        document.getElementById('btn-start').onclick = initGame;
+        document.getElementById('btn-restart').onclick = () => location.reload();
+
+    </script>
+</body>
+</html>
