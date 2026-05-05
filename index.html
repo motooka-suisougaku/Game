@@ -3,31 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>JS SURVIVOR - ULTIMATE</title>
+    <title>JS SURVIVOR - ULTIMATE CLOUD</title>
     <style>
         body { margin:0; overflow:hidden; background:#050510; font-family:sans-serif; touch-action:none; color:white; user-select:none; }
         canvas { display:block; }
         .overlay { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:rgba(0,0,0,0.9); z-index:20; backdrop-filter: blur(8px); }
         .hidden { display:none !important; }
-        h1 { font-size:40px; color:#00ffcc; text-shadow:0 0 15px #00ffcc; margin:10px; }
+        h1 { font-size:36px; color:#00ffcc; text-shadow:0 0 15px #00ffcc; margin-bottom:10px; }
         button, input { font-size:16px; padding:12px 20px; margin:5px; border-radius:8px; background:#1a1a2e; color:white; border:2px solid #444; cursor:pointer; font-weight:bold; }
         button:hover { border-color:#00ffcc; background:#2a2a4e; }
         
-        /* UI Elements */
+        /* UI レイアウト */
         #ui-layer { position:absolute; top:0; left:0; width:100%; padding:15px; pointer-events:none; z-index:10; }
-        .stats-row { display:flex; justify-content:space-between; font-size:18px; font-weight:bold; }
-        #exp-bg { width:100%; height:10px; background:#222; border-radius:5px; margin-top:8px; border:1px solid #444; overflow:hidden; }
-        #exp-bar { width:0%; height:100%; background:linear-gradient(90deg, #00ffcc, #0088ff); }
+        .stats-row { display:flex; justify-content:space-between; font-size:18px; font-weight:bold; text-shadow: 2px 2px 2px black; }
+        #exp-bg { width:100%; height:12px; background:#222; border-radius:6px; margin-top:8px; border:1px solid #444; overflow:hidden; }
+        #exp-bar { width:0%; height:100%; background:linear-gradient(90deg, #00ffcc, #0088ff); transition: width 0.3s; }
         
-        /* Menus */
-        .grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; max-height:40vh; overflow-y:auto; padding:10px; background:rgba(255,255,255,0.05); border-radius:10px; }
-        .box { border:2px solid #444; padding:10px; text-align:center; border-radius:8px; cursor:pointer; background:#111; font-size:12px; }
-        .box.owned { border-color:#00ffcc; }
-        .box.selected { background:#00ffcc; color:black; }
-        .box.locked { opacity:0.4; cursor:not-allowed; }
+        /* メニュー用グリッド */
+        .grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; max-height:40vh; overflow-y:auto; padding:15px; background:rgba(255,255,255,0.05); border-radius:10px; border:1px solid #333; }
+        .box { border:2px solid #444; padding:10px; text-align:center; border-radius:8px; cursor:pointer; background:#111; font-size:12px; transition: 0.2s; }
+        .box.owned { border-color:#0088ff; color:#00ccff; }
+        .box.selected { background:#00ffcc; color:black; border-color:#fff; transform: scale(1.05); }
+        .box.locked { opacity:0.3; cursor:not-allowed; border-style: dotted; }
         
-        .skill-card { background:#222; border:2px solid #444; border-radius:10px; padding:15px; margin:8px; width:220px; text-align:center; cursor:pointer; pointer-events:auto; }
-        #boss-warning { position:absolute; top:20%; width:100%; text-align:center; font-size:40px; color:red; font-weight:bold; display:none; z-index:30; animation: flash 0.5s infinite; }
+        .skill-card { background:#1a1a2e; border:2px solid #00ffcc; border-radius:10px; padding:15px; margin:8px; width:200px; text-align:center; cursor:pointer; pointer-events:auto; box-shadow: 0 0 10px rgba(0,255,204,0.3); }
+        #boss-warning { position:absolute; top:25%; width:100%; text-align:center; font-size:40px; color:red; font-weight:bold; display:none; z-index:30; animation: flash 0.5s infinite; text-shadow: 0 0 20px black; }
         @keyframes flash { 0% {opacity:1} 50% {opacity:0.2} }
     </style>
 </head>
@@ -35,58 +35,60 @@
 
     <div id="screen-login" class="overlay">
         <h1>JS SURVIVOR</h1>
-        <input type="text" id="player-name-input" placeholder="名前を入力" maxlength="10">
-        <button id="btn-login">スタート</button>
+        <p>名前を入力してクラウドデータをロード</p>
+        <input type="text" id="player-name-input" placeholder="名前 (例: たろう)" maxlength="10">
+        <button id="btn-login" style="background:#0088ff; border-color:#fff;">ログイン / 新規登録</button>
     </div>
 
     <div id="screen-home" class="overlay hidden">
-        <h2 id="disp-name"></h2>
-        <p>💰 <span id="disp-coins" style="color:#ffcc00;">0</span> C</p>
+        <h2 id="disp-name" style="margin:5px;"></h2>
+        <p style="font-size:20px;">💰 コイン: <span id="disp-coins" style="color:#ffcc00;">0</span></p>
         
         <div style="width:90%;">
-            <h3>ステージ選択 (オフライン)</h3>
+            <h3 style="margin:5px;">ステージ選択 (オフライン 1-30)</h3>
             <div id="stage-list" class="grid"></div>
         </div>
 
-        <div style="margin-top:15px;">
-            <button id="btn-start-offline" style="background:#00ffcc; color:black;">出撃</button>
-            <button id="btn-gacha">ガチャ (1000C)</button>
+        <div style="margin-top:10px;">
+            <button id="btn-start-offline" style="background:#00ffcc; color:black;">ソロ出撃</button>
+            <button id="btn-gacha" style="background:#ffcc00; color:black;">ガチャ (1000C)</button>
             <button id="btn-char-menu">キャラ変更</button>
         </div>
 
-        <div style="border:2px solid #f0f; padding:15px; margin-top:20px; border-radius:10px; background:rgba(255,0,255,0.1);">
-            <h4 style="margin:0; color:#f0f;">ONLINE RAID</h4>
-            <input type="text" id="room-id" value="ROOM1" style="width:100px; text-align:center;">
-            <button id="btn-raid-start" style="background:#f0f;">レイド共闘</button>
+        <div style="border:2px solid #f0f; padding:15px; margin-top:15px; border-radius:10px; background:rgba(255,0,255,0.1);">
+            <h4 style="margin:0 0 10px 0; color:#f0f;">ONLINE RAID (リアルタイム共闘)</h4>
+            ルームID: <input type="text" id="room-id" value="ROOM1" style="width:80px; text-align:center; padding:5px;">
+            <button id="btn-raid-start" style="background:#f0f;">共闘開始</button>
         </div>
     </div>
 
     <div id="screen-chars" class="overlay hidden">
-        <h2>CHARACTER SELECT</h2>
+        <h2>キャラクター選択</h2>
         <div id="char-grid" class="grid"></div>
-        <button id="btn-close-chars">戻る</button>
+        <button id="btn-close-chars" style="margin-top:20px;">閉じる</button>
     </div>
 
     <div id="screen-levelup" class="overlay hidden">
-        <h2 style="color:#ffcc00;">LEVEL UP</h2>
+        <h2 style="color:#ffcc00; text-shadow:0 0 10px #ffcc00;">LEVEL UP! スキル選択</h2>
         <div id="skill-container" style="display:flex; flex-wrap:wrap; justify-content:center;"></div>
     </div>
 
     <div id="screen-result" class="overlay hidden">
         <h1 id="res-title">FINISHED</h1>
-        <p>獲得: <span id="res-coins">0</span> C</p>
-        <div id="awaken-ui" class="hidden" style="border:2px solid #f0f; padding:15px; border-radius:10px; margin-bottom:10px;">
-            <p>ボスを撃破！30000Cで覚醒する？</p>
-            <button id="btn-awaken" style="background:#f0f;">覚醒解放</button>
+        <p style="font-size:24px;">獲得コイン: <span id="res-coins" style="color:#ffcc00;">0</span></p>
+        <div id="awaken-ui" class="hidden" style="border:3px solid #f0f; padding:20px; border-radius:15px; margin-bottom:15px; text-align:center; background:rgba(0,0,0,0.5);">
+            <p style="color:#f0f; font-weight:bold;">★ 覚醒チャンス ★</p>
+            <p>このキャラを覚醒させますか？ (コスト: 30000C)</p>
+            <button id="btn-awaken" style="background:#f0f; font-size:20px;">覚醒させる</button>
         </div>
-        <button id="btn-back-home">HOMEへ</button>
+        <button id="btn-back-home" style="padding:15px 40px; font-size:20px;">ホームに戻る</button>
     </div>
 
     <div id="ui-layer" class="hidden">
         <div class="stats-row">
-            <div>Stage <span id="ui-stage">1</span></div>
-            <div id="timer">03:00</div>
-            <div id="ui-hp">HP: 100%</div>
+            <div>Stage: <span id="ui-stage">1</span></div>
+            <div id="timer" style="color:#ffcc00; font-size:24px;">03:00</div>
+            <div id="ui-hp" style="color:#ff4444;">HP: 100%</div>
         </div>
         <div id="exp-bg"><div id="exp-bar"></div></div>
     </div>
@@ -96,67 +98,74 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, get, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+        // Firebase設定
         const firebaseConfig = { databaseURL: "https://game-2d503-default-rtdb.firebaseio.com" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- データ定義 ---
+        // --- ゲームデータ定義 ---
         const CHAR_DATA = [
-            { id: 0, name: "ルーキー", color: "#09f", hp: 100, spd: 4.0, atk: 15, awkT: 1 },
-            { id: 1, name: "ニンジャ", color: "#444", hp: 60, spd: 5.5, atk: 10, awkT: 5 },
-            { id: 2, name: "タンク", color: "#8b4513", hp: 250, spd: 2.5, atk: 20, awkT: 2 },
-            { id: 3, name: "スナイパ", color: "#0f0", hp: 80, spd: 3.5, atk: 40, awkT: 4 },
-            { id: 4, name: "マグネ", color: "#f0f", hp: 100, spd: 3.8, atk: 12, awkT: 3 },
-            { id: 5, name: "騎士", color: "#ffd700", hp: 150, spd: 3.0, atk: 15, awkT: 2 },
-            { id: 6, name: "射手", color: "#ff4500", hp: 90, spd: 4.0, atk: 8, awkT: 5 },
-            { id: 7, name: "吸血鬼", color: "#800080", hp: 100, spd: 4.2, atk: 15, awkT: 3 },
-            { id: 8, name: "サイボーグ", color: "#708090", hp: 180, spd: 3.2, atk: 25, awkT: 4 },
-            { id: 9, name: "超能力", color: "#00ffff", hp: 70, spd: 4.5, atk: 10, awkT: 3 },
-            { id: 10, name: "狂戦士", color: "#b22222", hp: 120, spd: 4.5, atk: 35, awkT: 1 },
-            { id: 11, name: "幽霊", color: "#fff", hp: 50, spd: 5.0, atk: 12, awkT: 2 },
-            { id: 12, name: "侍", color: "#cd5c5c", hp: 110, spd: 4.2, atk: 28, awkT: 5 },
-            { id: 13, name: "死霊", color: "#483d8b", hp: 80, spd: 3.8, atk: 20, awkT: 2 },
-            { id: 14, name: "博打打", color: "#ff1493", hp: 100, spd: 4.0, atk: 5, awkT: 5 },
-            { id: 15, name: "医者", color: "#fff", hp: 120, spd: 3.5, atk: 10, awkT: 3 },
-            { id: 16, name: "狩人", color: "#228b22", hp: 90, spd: 4.3, atk: 22, awkT: 5 },
-            { id: 17, name: "異星人", color: "#7fff00", hp: 100, spd: 4.8, atk: 18, awkT: 4 },
-            { id: 18, name: "竜王", color: "#dc143c", hp: 200, spd: 3.8, atk: 30, awkT: 1 },
-            { id: 19, name: "神様", color: "#ffea00", hp: 999, spd: 6.0, atk: 99, awkT: 2 }
+            { id: 0, name: "ルーキー", color: "#00aaff", hp: 100, spd: 4.0, atk: 15, awkT: 1 },
+            { id: 1, name: "ニンジャ", color: "#444444", hp: 70, spd: 5.5, atk: 12, awkT: 2 },
+            { id: 2, name: "タンク", color: "#8b4513", hp: 250, spd: 2.8, atk: 20, awkT: 1 },
+            { id: 3, name: "スナイパ", color: "#00ff00", hp: 80, spd: 3.5, atk: 45, awkT: 2 },
+            { id: 4, name: "マグネ", color: "#ff00ff", hp: 100, spd: 3.8, atk: 12, awkT: 1 },
+            { id: 5, name: "騎士", color: "#ffd700", hp: 160, spd: 3.2, atk: 18, awkT: 1 },
+            { id: 6, name: "幽霊", color: "#ffffff", hp: 50, spd: 5.0, atk: 15, awkT: 2 },
+            { id: 7, name: "竜王", color: "#ff0000", hp: 300, spd: 3.5, atk: 40, awkT: 2 },
+            { id: 19, name: "神様", color: "#ffff00", hp: 999, spd: 6.0, atk: 99, awkT: 2 }
         ];
+        // 他のIDはループで生成
+        for(let i=0; i<20; i++) {
+            if(!CHAR_DATA.find(c => c.id === i)) {
+                CHAR_DATA.push({ id: i, name: "キャラ"+i, color: `hsl(${i*40}, 70%, 50%)`, hp: 100, spd: 4, atk: 20, awkT: 1 });
+            }
+        }
 
-        const skillPool = [
+        const SKILL_POOL = [
             { id:'multi', name:'連射', desc:'同時発射数UP' }, { id:'power', name:'攻撃', desc:'威力UP' },
-            { id:'orbit', name:'バリア', desc:'周囲を回る玉' }, { id:'magnet', name:'磁石', desc:'回収範囲UP' },
+            { id:'orbit', name:'バリア', desc:'周囲を回る弾' }, { id:'magnet', name:'磁石', desc:'回収範囲UP' },
             { id:'speed', name:'加速', desc:'移動速度UP' }, { id:'heal', name:'回復', desc:'HP全回復' }
         ];
 
-        // --- セーブデータ ---
-        let saveData = JSON.parse(localStorage.getItem("js_surv_v4")) || {
-            name:"", coins:5000, chars:[0], awakened:[], unlockedStage:1, selectedChar:0, currentStage:1
+        // --- クラウドセーブデータ ---
+        let playerName = "";
+        let saveData = {
+            coins: 500,
+            chars: [0], // 初期キャラ
+            awakened: [],
+            unlockedStage: 1,
+            selectedChar: 0,
+            currentStage: 1
         };
-        function save() { localStorage.setItem("js_surv_v4", JSON.stringify(saveData)); }
 
-        // --- ゲーム管理 ---
-        let state = 'LOGIN', mode = 'OFFLINE', frame = 0, playTime = 180, scoreCoins = 0;
-        let player, partner, boss, enemies = [], bullets = [], gems = [], orbits = [];
-        let targetPos = { x: 0, y: 0 };
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        let W, H;
-        function resize() { W = window.innerWidth; H = window.innerHeight; canvas.width = W; canvas.height = H; }
-        window.addEventListener('resize', resize); resize();
+        async function saveToCloud() {
+            if(!playerName) return;
+            await set(ref(db, 'users/' + playerName), saveData);
+        }
 
-        // --- UIイベント ---
+        async function loadFromCloud(name) {
+            const snap = await get(ref(db, 'users/' + name));
+            if(snap.exists()) {
+                saveData = { ...saveData, ...snap.val() };
+            } else {
+                await saveToCloud(); // 新規作成
+            }
+            openHome();
+        }
+
+        // --- UI 操作 ---
         document.getElementById('btn-login').onclick = () => {
-            const n = document.getElementById('player-name-input').value.trim();
-            if(!n) return; saveData.name = n; save(); openHome();
+            playerName = document.getElementById('player-name-input').value.trim();
+            if(!playerName) return alert("名前を入れてね");
+            loadFromCloud(playerName);
         };
 
         function openHome() {
             state = 'HOME';
-            document.getElementById('disp-name').innerText = "PLAYER: " + saveData.name;
+            document.getElementById('disp-name').innerText = "PLAYER: " + playerName;
             document.getElementById('disp-coins').innerText = saveData.coins;
             renderStageList();
             showScreen('screen-home');
@@ -169,7 +178,7 @@
                 const isLocked = i > saveData.unlockedStage;
                 div.className = `box ${isLocked?'locked':''} ${i===saveData.currentStage?'selected':''}`;
                 div.innerText = i;
-                if(!isLocked) div.onclick = () => { saveData.currentStage = i; renderStageList(); };
+                if(!isLocked) div.onclick = () => { saveData.currentStage = i; renderStageList(); saveToCloud(); };
                 list.appendChild(div);
             }
         }
@@ -177,31 +186,46 @@
         document.getElementById('btn-char-menu').onclick = () => {
             showScreen('screen-chars');
             const grid = document.getElementById('char-grid'); grid.innerHTML = "";
-            CHAR_DATA.forEach(c => {
+            CHAR_DATA.sort((a,b)=>a.id-b.id).forEach(c => {
                 const owned = saveData.chars.includes(c.id);
                 const isAwk = saveData.awakened.includes(c.id);
                 const div = document.createElement('div');
                 div.className = `box ${owned?'owned':''} ${saveData.selectedChar===c.id?'selected':''}`;
-                div.innerHTML = `<b>${owned?c.name:'???'}</b>${isAwk?'<br>★':''}`;
-                if(owned) div.onclick = () => { saveData.selectedChar = c.id; save(); openHome(); };
+                div.innerHTML = `<b>${owned?c.name:'???'}</b>${isAwk?'<br>★覚醒':''}`;
+                if(owned) div.onclick = () => { saveData.selectedChar = c.id; saveToCloud(); document.getElementById('btn-close-chars').click(); };
                 grid.appendChild(div);
             });
         };
         document.getElementById('btn-close-chars').onclick = openHome;
 
-        document.getElementById('btn-gacha').onclick = () => {
-            if(saveData.coins < 1000) return alert("コイン不足！");
+        document.getElementById('btn-gacha').onclick = async () => {
+            if(saveData.coins < 1000) return alert("コインが足りません！");
             saveData.coins -= 1000;
-            const id = Math.random() < 0.05 ? 19 : Math.floor(Math.random() * 19);
-            if(!saveData.chars.includes(id)) { saveData.chars.push(id); alert("NEW! " + CHAR_DATA[id].name); }
-            else { saveData.coins += 300; alert("重複(300C還元)"); }
-            save(); openHome();
+            const newId = Math.random() < 0.05 ? 19 : Math.floor(Math.random()*20);
+            if(!saveData.chars.includes(newId)) {
+                saveData.chars.push(newId);
+                alert("NEW!! キャラクター獲得: " + CHAR_DATA.find(c=>c.id===newId).name);
+            } else {
+                saveData.coins += 400; alert("重複のため400C還元されました。");
+            }
+            await saveToCloud();
+            openHome();
         };
+
+        // --- ゲームエンジン本体 ---
+        let state = 'LOGIN', mode = 'OFFLINE', frame = 0, playTime = 180, scoreCoins = 0;
+        let player, partner, boss, enemies = [], bullets = [], gems = [], orbits = [];
+        let targetPos = { x: 0, y: 0 };
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let W, H;
+        function resize() { W = window.innerWidth; H = window.innerHeight; canvas.width = W; canvas.height = H; }
+        window.addEventListener('resize', resize); resize();
 
         document.getElementById('btn-start-offline').onclick = () => { mode = 'OFFLINE'; initGame(); };
         document.getElementById('btn-raid-start').onclick = () => { mode = 'RAID'; connectRaid(); };
 
-        // --- Firebase レイド同期 ---
+        // レイド同期
         let rid = ""; let isHost = false;
         function connectRaid() {
             rid = document.getElementById('room-id').value;
@@ -209,10 +233,12 @@
             onValue(rRef, (snap) => {
                 const data = snap.val();
                 if(!data) {
-                    isHost = true; set(rRef, { host: saveData.name, p1: { x:W/2, y:H/2, name:saveData.name, cid:saveData.selectedChar } });
+                    isHost = true;
+                    set(rRef, { host: playerName, p1: { x:W/2, y:H/2, cid:saveData.selectedChar } });
                     onDisconnect(rRef).remove();
-                } else if(data.host !== saveData.name) {
-                    isHost = false; update(ref(db, `rooms/${rid}/p2`), { x:W/2, y:H/2, name:saveData.name, cid:saveData.selectedChar });
+                } else if(data.host !== playerName) {
+                    isHost = false;
+                    update(ref(db, `rooms/${rid}/p2`), { x:W/2, y:H/2, cid:saveData.selectedChar });
                 }
                 partner = isHost ? data?.p2 : data?.p1;
                 if(!isHost && data?.boss) boss = data.boss;
@@ -220,15 +246,14 @@
             });
         }
 
-        // --- ゲームエンジン ---
         function initGame() {
             state = 'PLAYING';
             showScreen('none');
             document.getElementById('ui-layer').classList.remove('hidden');
             document.getElementById('ui-stage').innerText = mode==='OFFLINE' ? saveData.currentStage : "RAID";
             
-            const c = CHAR_DATA[saveData.selectedChar];
-            player = { ...c, x:W/2, y:H/2, level:1, exp:0, maxExp:5, maxHp:c.hp, curHp:c.hp, 
+            const c = CHAR_DATA.find(x=>x.id===saveData.selectedChar);
+            player = { ...c, x:W/2, y:H/2, level:1, exp:0, maxExp:6, maxHp:c.hp, curHp:c.hp, 
                        stats:{ multi:1, power:c.atk, speed:c.spd, orbit:0, magnet:150 } };
             
             enemies = []; bullets = []; gems = []; orbits = []; boss = null;
@@ -237,54 +262,61 @@
         }
 
         function gameLoop() {
-            if(state === 'PLAYING') update();
-            if(state === 'PLAYING' || state === 'LEVELUP') draw();
+            if(state === 'PLAYING') { updateGame(); drawGame(); }
+            if(state === 'LEVELUP') { drawGame(); }
             if(state !== 'RESULT') requestAnimationFrame(gameLoop);
         }
 
-        function update() {
+        function updateGame() {
             frame++;
             if(frame % 60 === 0) playTime--;
 
-            // 移動
-            player.x += (targetPos.x - player.x) * 0.1 * (player.stats.speed/4);
-            player.y += (targetPos.y - player.y) * 0.1 * (player.stats.speed/4);
+            // 移動 (指・マウス追従 + 速度倍率)
+            const dx = (targetPos.x - player.x);
+            const dy = (targetPos.y - player.y);
+            const dist = Math.hypot(dx, dy);
+            if(dist > 5) {
+                player.x += (dx/dist) * player.stats.speed;
+                player.y += (dy/dist) * player.stats.speed;
+            }
 
-            // オンライン同期
-            if(mode === 'RAID' && frame % 5 === 0) {
+            // 同期
+            if(mode === 'RAID' && frame % 4 === 0) {
                 update(ref(db, `rooms/${rid}/${isHost?'p1':'p2'}`), { x: Math.floor(player.x), y: Math.floor(player.y) });
                 if(isHost && boss) update(ref(db, `rooms/${rid}/boss`), boss);
             }
 
-            // 敵スポーン（全方位）
-            const spawnRate = mode==='RAID' ? 20 : Math.max(5, 40 - saveData.currentStage);
+            // 敵出現 (ステージが上がるほど早く、強くなる)
+            const stageLvl = mode==='RAID' ? 15 : saveData.currentStage;
+            const spawnRate = Math.max(4, 45 - stageLvl);
             if(frame % spawnRate === 0) {
                 const ang = Math.random() * Math.PI * 2;
+                const r = Math.max(W, H);
                 enemies.push({
-                    x: player.x + Math.cos(ang)*W, y: player.y + Math.sin(ang)*H,
-                    hp: 10 * (1 + (mode==='OFFLINE'?saveData.currentStage:10)*0.3), speed: 2, size: 15
+                    x: player.x + Math.cos(ang)*r, y: player.y + Math.sin(ang)*r,
+                    hp: 10 * (1 + stageLvl * 0.4), speed: 1.5 + (stageLvl*0.1), size: 18
                 });
             }
 
-            // ボス出現
-            if(mode==='RAID' && playTime === 150 && isHost && !boss) {
-                boss = { x:W/2, y:-100, hp:50000, max:50000, size:60 };
+            // ボス (RAIDモードのみ)
+            if(mode==='RAID' && playTime === 160 && isHost && !boss) {
+                boss = { x:W/2, y:-200, hp:60000, max:60000, size:70 };
                 document.getElementById('boss-warning').style.display = 'block';
                 setTimeout(()=>document.getElementById('boss-warning').style.display='none', 3000);
             }
 
-            // 敵・ボスの移動
+            // 移動ロジック
             enemies.forEach(e => {
                 const ang = Math.atan2(player.y - e.y, player.x - e.x);
                 e.x += Math.cos(ang) * e.speed; e.y += Math.sin(ang) * e.speed;
             });
             if(boss) {
                 const ang = Math.atan2(player.y - boss.y, player.x - boss.x);
-                boss.x += Math.cos(ang) * 0.8; boss.y += Math.sin(ang) * 0.8;
+                boss.x += Math.cos(ang) * 1.2; boss.y += Math.sin(ang) * 1.2;
             }
 
             // オートターゲット射撃
-            if(frame % 20 === 0 && (enemies.length > 0 || boss)) {
+            if(frame % 18 === 0 && (enemies.length > 0 || boss)) {
                 let target = boss || null;
                 if(!target) {
                     let minDist = Infinity;
@@ -296,63 +328,104 @@
                 if(target) {
                     const ang = Math.atan2(target.y - player.y, target.x - player.x);
                     for(let i=0; i<player.stats.multi; i++) {
-                        bullets.push({ x:player.x, y:player.y, vx:Math.cos(ang)*12, vy:Math.sin(ang)*12, dmg:player.stats.power });
+                        const offset = (i - (player.stats.multi-1)/2) * 0.2;
+                        bullets.push({ x:player.x, y:player.y, vx:Math.cos(ang+offset)*14, vy:Math.sin(ang+offset)*14, dmg:player.stats.power });
                     }
-                    if(saveData.awakened.includes(player.id)) fireAwake(ang);
+                    // 覚醒攻撃
+                    if(saveData.awakened.includes(player.id)) {
+                        bullets.push({ x:player.x, y:player.y, vx:Math.cos(ang)*10, vy:Math.sin(ang)*10, dmg:player.stats.power*3, size:40, special:true });
+                    }
                 }
             }
 
-            // 判定
+            // バリア (Orbit)
+            if(player.stats.orbit > 0) {
+                for(let i=0; i<player.stats.orbit; i++) {
+                    const a = (frame*0.05) + (i * Math.PI*2 / player.stats.orbit);
+                    const ox = player.x + Math.cos(a)*80;
+                    const oy = player.y + Math.sin(a)*80;
+                    enemies.forEach(e => {
+                        if(Math.hypot(e.x-ox, e.y-oy) < 30) e.hp -= 2;
+                    });
+                }
+            }
+
+            // 当たり判定
             bullets.forEach((b, bi) => {
                 b.x += b.vx; b.y += b.vy;
                 if(boss && Math.hypot(boss.x-b.x, boss.y-b.y) < boss.size) {
-                    boss.hp -= b.dmg; bullets.splice(bi, 1);
-                    if(boss.hp <= 0 && isHost) endLevel(true);
+                    boss.hp -= b.dmg; if(!b.special) bullets.splice(bi, 1);
+                    if(boss.hp <= 0 && isHost) endGame(true);
                 }
                 enemies.forEach((e, ei) => {
                     if(Math.hypot(e.x-b.x, e.y-b.y) < e.size) {
-                        e.hp -= b.dmg; bullets.splice(bi, 1);
+                        e.hp -= b.dmg; if(!b.special) bullets.splice(bi, 1);
                         if(e.hp <= 0) { gems.push({x:e.x, y:e.y}); enemies.splice(ei,1); }
                     }
                 });
+                if(Math.abs(b.x)>W*2 || Math.abs(b.y)>H*2) bullets.splice(bi, 1);
             });
 
-            // ジェム回収
+            // 回収
             gems.forEach((g, gi) => {
                 const d = Math.hypot(player.x-g.x, player.y-g.y);
                 if(d < player.stats.magnet) { g.x += (player.x-g.x)*0.2; g.y += (player.y-g.y)*0.2; }
-                if(d < 20) { player.exp++; scoreCoins+=10; gems.splice(gi,1); if(player.exp >= player.maxExp) levelUp(); }
+                if(d < 25) { player.exp++; scoreCoins+=15; gems.splice(gi,1); if(player.exp >= player.maxExp) levelUp(); }
             });
 
-            // プレイヤーダメージ
-            enemies.forEach(e => { if(Math.hypot(player.x-e.x, player.y-e.y) < 25) player.curHp -= 0.2; });
-            if(boss && Math.hypot(player.x-boss.x, player.y-boss.y) < boss.size) player.curHp -= 1;
+            // 被ダメージ
+            enemies.forEach(e => { if(Math.hypot(player.x-e.x, player.y-e.y) < 30) player.curHp -= 0.5; });
+            if(boss && Math.hypot(player.x-boss.x, player.y-boss.y) < boss.size) player.curHp -= 2;
             
+            if(player.curHp <= 0) endGame(false);
+            if(mode === 'OFFLINE' && playTime <= 0) endGame(true);
+
+            // UI更新
             document.getElementById('ui-hp').innerText = "HP: " + Math.max(0, Math.floor(player.curHp/player.maxHp*100)) + "%";
             document.getElementById('exp-bar').style.width = (player.exp/player.maxExp*100) + "%";
-            document.getElementById('timer').innerText = playTime + "s";
-
-            if(player.curHp <= 0) endLevel(false);
-            if(mode === 'OFFLINE' && playTime <= 0) endLevel(true);
+            document.getElementById('timer').innerText = Math.floor(playTime/60) + ":" + (playTime%60).toString().padStart(2,'0');
         }
 
-        function fireAwake(ang) {
-            const t = player.awkT; const dmg = player.stats.power;
-            if(t===1) bullets.push({x:player.x, y:player.y, vx:Math.cos(ang)*20, vy:Math.sin(ang)*20, dmg:dmg*5, size:30});
-            if(t===2) { for(let i=0; i<8; i++) { const a = ang + i*Math.PI/4; bullets.push({x:player.x, y:player.y, vx:Math.cos(a)*10, vy:Math.sin(a)*10, dmg:dmg*2}); } }
+        function drawGame() {
+            ctx.fillStyle = "#050510"; ctx.fillRect(0,0,W,H);
+            // 描画
+            gems.forEach(g => { ctx.fillStyle="#0ff"; ctx.beginPath(); ctx.arc(g.x, g.y, 5, 0, 7); ctx.fill(); });
+            enemies.forEach(e => { ctx.fillStyle="#f44"; ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, 7); ctx.fill(); });
+            bullets.forEach(b => { 
+                ctx.fillStyle = b.special ? "#0f0" : "#ff0"; 
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.size||6, 0, 7); ctx.fill(); 
+            });
+            if(boss) {
+                ctx.fillStyle="red"; ctx.beginPath(); ctx.arc(boss.x, boss.y, boss.size, 0, 7); ctx.fill();
+                ctx.fillStyle="#222"; ctx.fillRect(boss.x-50, boss.y-90, 100, 10);
+                ctx.fillStyle="red"; ctx.fillRect(boss.x-50, boss.y-90, 100*(boss.hp/boss.max), 10);
+            }
+            if(partner) { 
+                ctx.fillStyle="#f0f"; ctx.beginPath(); ctx.arc(partner.x, partner.y, 20, 0, 7); ctx.fill(); 
+                ctx.fillStyle="white"; ctx.fillText("Partner", partner.x-20, partner.y-30);
+            }
+            if(player.stats.orbit > 0) {
+                for(let i=0; i<player.stats.orbit; i++) {
+                    const a = (frame*0.05) + (i * Math.PI*2 / player.stats.orbit);
+                    ctx.fillStyle="#00ffcc"; ctx.beginPath(); ctx.arc(player.x + Math.cos(a)*80, player.y + Math.sin(a)*80, 10, 0, 7); ctx.fill();
+                }
+            }
+            ctx.fillStyle = player.color; ctx.beginPath(); ctx.arc(player.x, player.y, 22, 0, 7); ctx.fill();
+            ctx.strokeStyle = "white"; ctx.lineWidth=2; ctx.stroke();
         }
 
         function levelUp() {
             state = 'LEVELUP';
-            player.level++; player.exp = 0; player.maxExp += 5;
+            player.exp = 0; player.maxExp = Math.floor(player.maxExp * 1.3);
             const container = document.getElementById('skill-container'); container.innerHTML = "";
-            const skills = [...skillPool].sort(()=>0.5-Math.random()).slice(0, 3);
+            const skills = [...SKILL_POOL].sort(()=>0.5-Math.random()).slice(0, 3);
             skills.forEach(s => {
                 const div = document.createElement('div'); div.className = 'skill-card';
-                div.innerHTML = `<b>${s.name}</b><p>${s.desc}</p>`;
+                div.innerHTML = `<h3>${s.name}</h3><p>${s.desc}</p>`;
                 div.onclick = () => {
                     if(s.id==='multi') player.stats.multi++; if(s.id==='power') player.stats.power+=15;
-                    if(s.id==='speed') player.stats.speed+=0.5; if(s.id==='heal') player.curHp = player.maxHp;
+                    if(s.id==='orbit') player.stats.orbit++; if(s.id==='magnet') player.stats.magnet+=100;
+                    if(s.id==='speed') player.stats.speed+=0.6; if(s.id==='heal') player.curHp = player.maxHp;
                     state = 'PLAYING'; document.getElementById('screen-levelup').classList.add('hidden');
                 };
                 container.appendChild(div);
@@ -360,35 +433,29 @@
             document.getElementById('screen-levelup').classList.remove('hidden');
         }
 
-        function draw() {
-            ctx.fillStyle = "#050510"; ctx.fillRect(0,0,W,H);
-            gems.forEach(g => { ctx.fillStyle="#0ff"; ctx.beginPath(); ctx.arc(g.x, g.y, 4, 0, 7); ctx.fill(); });
-            enemies.forEach(e => { ctx.fillStyle="#f44"; ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, 7); ctx.fill(); });
-            bullets.forEach(b => { ctx.fillStyle="#ff0"; ctx.beginPath(); ctx.arc(b.x, b.y, b.size||6, 0, 7); ctx.fill(); });
-            if(boss) {
-                ctx.fillStyle="red"; ctx.beginPath(); ctx.arc(boss.x, boss.y, boss.size, 0, 7); ctx.fill();
-                ctx.fillStyle="red"; ctx.fillRect(boss.x-50, boss.y-80, 100*(boss.hp/boss.max), 8);
-            }
-            if(partner) { ctx.fillStyle="#f0f"; ctx.beginPath(); ctx.arc(partner.x, partner.y, 15, 0, 7); ctx.fill(); }
-            ctx.fillStyle = player.color; ctx.beginPath(); ctx.arc(player.x, player.y, 20, 0, 7); ctx.fill();
-        }
-
-        function endLevel(win) {
-            state = 'RESULT'; showScreen('screen-result');
-            document.getElementById('res-title').innerText = win ? "SUCCESS!" : "FAILED";
+        async function endGame(win) {
+            state = 'RESULT';
+            showScreen('screen-result');
+            document.getElementById('res-title').innerText = win ? "STAGE CLEAR!!" : "GAME OVER";
             document.getElementById('res-coins').innerText = scoreCoins;
             saveData.coins += scoreCoins;
-            if(win && mode === 'OFFLINE' && saveData.currentStage === saveData.unlockedStage) saveData.unlockedStage++;
+            if(win && mode === 'OFFLINE' && saveData.currentStage === saveData.unlockedStage) {
+                if(saveData.unlockedStage < 30) saveData.unlockedStage++;
+            }
             
+            // 覚醒ロジック (レイド勝利時のみ)
             if(win && mode === 'RAID' && !saveData.awakened.includes(player.id)) {
                 document.getElementById('awaken-ui').classList.remove('hidden');
-                document.getElementById('btn-awaken').onclick = () => {
-                    if(saveData.coins < 30000) return alert("コイン不足");
+                document.getElementById('btn-awaken').onclick = async () => {
+                    if(saveData.coins < 30000) return alert("コインが足りません(30000C必要)");
                     saveData.coins -= 30000; saveData.awakened.push(player.id);
-                    save(); alert("覚醒成功！"); document.getElementById('awaken-ui').classList.add('hidden');
+                    await saveToCloud(); alert("キャラクターが覚醒しました！");
+                    document.getElementById('awaken-ui').classList.add('hidden');
+                    openHome();
                 };
             } else { document.getElementById('awaken-ui').classList.add('hidden'); }
-            save();
+            
+            await saveToCloud();
             if(isHost) remove(ref(db, 'rooms/'+rid));
         }
 
@@ -399,7 +466,8 @@
 
         document.getElementById('btn-back-home').onclick = openHome;
         window.onmousemove = e => { targetPos.x = e.clientX; targetPos.y = e.clientY; };
-        window.ontouchmove = e => { targetPos.x = e.touches[0].clientX; targetPos.y = e.touches[0].clientY; };
+        window.ontouchstart = e => { targetPos.x = e.touches[0].clientX; targetPos.y = e.touches[0].clientY; };
+        window.ontouchmove = e => { targetPos.x = e.touches[0].clientX; targetPos.y = e.touches[0].clientY; e.preventDefault(); };
     </script>
 </body>
 </html>
