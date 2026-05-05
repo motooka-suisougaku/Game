@@ -3,95 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>JS SURVIVOR - RAID COMPLETE</title>
+    <title>JS SURVIVOR - GITHUB RAID</title>
     <style>
-        body { margin:0; overflow:hidden; background:#050510; font-family:sans-serif; touch-action:none; color:white; user-select:none; }
+        body { margin:0; overflow:hidden; background:#050510; font-family:'Segoe UI',sans-serif; color:white; user-select:none; touch-action:none; }
         canvas { display:block; }
-        .overlay { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:rgba(0,0,0,0.9); z-index:20; text-align:center;}
+        .overlay { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:rgba(0,0,0,0.9); z-index:20; text-align:center; transition: 0.3s; }
         .hidden { display:none !important; }
-        h1 { font-size:42px; color:#ffcc00; text-shadow:0 0 20px #ffcc00; margin:10px; }
-        button, select, input { font-size:18px; padding:12px 20px; margin:5px; border-radius:8px; background:#1a1a2e; color:white; border:2px solid #444; cursor:pointer; }
-        button:hover { border-color:#00ffcc; background:#2a2a4e; }
         
-        /* UIレイアウト */
-        #ui-layer { position:absolute; top:0; left:0; width:100%; padding:15px; pointer-events:none; z-index:10; box-sizing:border-box; }
-        .top-bar { display:flex; justify-content:space-between; font-weight:bold; font-size:22px; text-shadow:2px 2px 0 #000; }
-        #exp-bg { width:100%; height:12px; background:#222; border:1px solid #444; margin-top:10px; }
-        #exp-bar { width:0%; height:100%; background:#0cf; transition:width 0.2s; }
+        /* UIデザイン */
+        h1 { font-size:48px; color:#ffcc00; text-shadow:0 0 20px #ffcc00; margin:0 0 20px 0; letter-spacing:4px; }
+        button { font-size:18px; padding:12px 24px; margin:8px; border-radius:30px; background:#1a1a2e; color:white; border:2px solid #444; cursor:pointer; transition:0.2s; min-width:180px; }
+        button:hover { border-color:#0cf; background:#2a2a4e; transform:scale(1.05); }
+        input { font-size:18px; padding:12px; border-radius:8px; border:2px solid #444; background:#000; color:#fff; text-align:center; width:250px; }
 
-        /* キャラクターグリッド */
-        .grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; max-height:45vh; overflow-y:auto; padding:15px; background:rgba(0,0,0,0.5); border-radius:10px; border:1px solid #333; margin:10px 0; }
-        .box { border:2px solid #444; padding:10px; cursor:pointer; background:#111; font-size:12px; transition:0.2s; }
-        .box.owned { border-color:#00ffcc; }
-        .box.selected { background:#00ffcc; color:#000; font-weight:bold; transform: scale(1.05); }
-        .box.awakened { border-color:#ff00ff; box-shadow:0 0 10px #ff00ff; }
+        /* キャラクター選択グリッド */
+        .grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; max-height:40vh; overflow-y:auto; padding:15px; background:rgba(255,255,255,0.05); border-radius:15px; margin:15px 0; }
+        .box { border:2px solid #444; padding:15px; cursor:pointer; background:#111; font-size:13px; border-radius:10px; opacity:0.5; }
+        .box.owned { opacity:1; border-color:#0cf; }
+        .box.selected { background:#0cf; color:#000; font-weight:bold; border-color:#fff; }
+        .box.awakened { border-color:#f0f; box-shadow:0 0 15px #f0f; }
 
-        .skill-card { background:#222; border:2px solid #0cf; padding:15px; margin:10px; width:260px; cursor:pointer; }
-        #boss-notice { position:absolute; top:25%; width:100%; text-align:center; font-size:40px; color:red; font-weight:bold; display:none; z-index:30; text-shadow:0 0 10px #000; }
-        .loading-spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; display:none; margin:10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #ui-layer { position:absolute; top:0; left:0; width:100%; padding:20px; pointer-events:none; box-sizing:border-box; z-index:10; }
+        .top-info { display:flex; justify-content:space-between; font-size:24px; font-weight:bold; text-shadow:2px 2px 0 #000; }
+        #exp-bg { width:100%; height:12px; background:#222; border-radius:6px; overflow:hidden; margin-top:10px; border:1px solid #444; }
+        #exp-bar { width:0%; height:100%; background:linear-gradient(90deg, #0cf, #00f); transition:width 0.3s; }
+        #boss-notice { position:absolute; top:30%; width:100%; text-align:center; font-size:50px; color:red; font-weight:bold; display:none; z-index:30; text-shadow:0 0 20px #000; animation: blink 0.5s infinite; }
+        @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
     </style>
 </head>
 <body>
 
     <div id="screen-login" class="overlay">
         <h1>JS SURVIVOR</h1>
-        <p>Firebase Online System</p>
-        <input type="text" id="input-name" placeholder="プレイヤー名" maxlength="10">
-        <button id="btn-login">データをロードして開始</button>
-        <div id="login-loading" class="loading-spinner"></div>
+        <input type="text" id="input-name" placeholder="プレイヤー名を入力" maxlength="10">
+        <button id="btn-login">データをロード</button>
+        <p id="login-msg" style="color:#888; margin-top:10px;">GitHub Pages Online Mode</p>
     </div>
 
     <div id="screen-home" class="overlay hidden">
-        <div style="margin-bottom:10px;">
-            <span id="user-name" style="color:#0cf; font-size:24px; font-weight:bold;"></span>
-            <span style="margin-left:20px; color:#fc0; font-size:24px;"><span id="user-coins">0</span> C</span>
+        <div style="margin-bottom:15px;">
+            <span id="user-name" style="color:#0cf; font-size:26px;">---</span>
+            <span style="margin-left:25px; color:#fc0; font-size:26px;"><span id="user-coins">0</span> C</span>
         </div>
-        
-        <p style="margin:5px 0;">出撃キャラを選択</p>
         <div id="char-list" class="grid"></div>
-
-        <div style="display:flex; align-items:center;">
-            <select id="stage-select"></select>
-            <button id="btn-start" style="background:#050; border-color:#0f0;">ソロ出撃</button>
-            <button id="btn-raid-menu" style="border-color:#f0f; color:#f0f;">レイドマッチング</button>
+        <div>
+            <select id="stage-select" style="font-size:18px; padding:10px; border-radius:8px; background:#111; color:white;"></select>
+            <button id="btn-start" style="color:#0f0; border-color:#0f0;">ソロ出撃</button>
+            <button id="btn-raid-menu" style="color:#f0f; border-color:#f0f;">レイドバトル</button>
         </div>
         <button id="btn-gacha-menu">ガチャを引く (1000C)</button>
     </div>
 
     <div id="screen-raid" class="overlay hidden">
         <h2 style="color:#f0f;">RAID MATCHING</h2>
-        <p>同じ合言葉を入力して待機してください</p>
         <input type="text" id="raid-pass" value="7777" placeholder="合言葉">
         <button id="btn-join-raid">マッチング開始</button>
         <button id="btn-cancel-raid">戻る</button>
-        <p id="raid-status" style="margin-top:20px; color:#aaa;">待機中...</p>
+        <p id="raid-status" style="margin-top:20px; color:#0cf;">待機中...</p>
     </div>
 
     <div id="screen-gacha" class="overlay hidden">
-        <h1>GACHA</h1>
-        <button id="btn-pull">1000C消費して引く</button>
-        <p id="gacha-res" style="font-size:28px; min-height:40px; color:#0ff; font-weight:bold;"></p>
+        <h1 style="color:#0ff;">GACHA</h1>
+        <p id="gacha-res" style="font-size:32px; height:50px; color:#fff;"></p>
+        <button id="btn-pull">1000Cで回す</button>
         <button id="btn-home-gacha">戻る</button>
     </div>
 
     <div id="screen-levelup" class="overlay hidden">
-        <h2>LEVEL UP!</h2>
+        <h2 style="color:#0cf;">LEVEL UP!</h2>
         <div id="skill-list"></div>
     </div>
 
     <div id="screen-result" class="overlay hidden">
         <h1 id="res-title">FINISH</h1>
-        <p>獲得コイン: <span id="res-coins" style="color:#fc0;">0</span> C</p>
-        <div id="awaken-box" class="hidden" style="border:3px solid #f0f; padding:20px; margin:15px; border-radius:15px; background:rgba(255,0,255,0.1);">
-            <h3 style="color:#f0f; margin:0;">レイドクリア特典：覚醒可能！</h3>
-            <button id="btn-awaken-act">30,000Cでこのキャラを覚醒</button>
+        <p>報酬: <span id="res-coins" style="color:#fc0;">0</span> コイン</p>
+        <div id="awaken-box" class="hidden" style="border:4px double #f0f; padding:20px; background:rgba(255,0,255,0.1); border-radius:15px;">
+            <h3 style="color:#f0f;">レイドクリア！キャラを覚醒させますか？</h3>
+            <button id="btn-awaken-act">30,000Cで覚醒</button>
         </div>
-        <button id="btn-back-home">基地へ戻る</button>
+        <button id="btn-back-home">基地に帰還</button>
     </div>
 
     <div id="ui-layer" class="hidden">
-        <div class="top-bar">
+        <div class="top-info">
             <div id="ui-lv">Lv.1</div>
             <div id="ui-timer" style="color:#f44;">05:00</div>
             <div id="ui-name">---</div>
@@ -99,84 +93,66 @@
         <div id="exp-bg"><div id="exp-bar"></div></div>
     </div>
 
-    <div id="boss-notice">WARNING!!</div>
+    <div id="boss-notice">WARNING: RAID BOSS</div>
     <canvas id="gameCanvas"></canvas>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, get, onValue, off, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // --- Firebase設定 ---
+        // --- 設定 (自分のものに書き換えてください) ---
         const firebaseConfig = { databaseURL: "https://game-2d503-default-rtdb.firebaseio.com" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- システム変数 ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        let W, H;
-        const resize = () => { W=window.innerWidth; H=window.innerHeight; canvas.width=W; canvas.height=H; };
-        window.addEventListener('resize', resize); resize();
-
-        let saveData = { name: "", coins: 0, unlocked: 1, chars: [0], selected: 0, awakened: [] };
-        
+        // --- キャラクタデータ ---
         const CHARS = [
             { id: 0, name: "ルーキー", color: "#09f", hp: 100, spd: 4.0, atk: 15, awkT: 1 },
             { id: 1, name: "ニンジャ", color: "#333", hp: 70, spd: 5.5, atk: 12, awkT: 5 },
             { id: 2, name: "タンク", color: "#841", hp: 250, spd: 2.5, atk: 20, awkT: 2 },
             { id: 3, name: "スナイパ", color: "#0f0", hp: 80, spd: 3.5, atk: 45, awkT: 4 },
             { id: 4, name: "マグネ", color: "#f0f", hp: 100, spd: 3.8, atk: 12, awkT: 3 },
-            { id: 5, name: "騎士", color: "#fd0", hp: 160, spd: 3.0, atk: 18, awkT: 2 },
+            { id: 5, name: "パラディン", color: "#fd0", hp: 160, spd: 3.0, atk: 18, awkT: 2 },
             { id: 6, name: "ガンナー", color: "#f40", hp: 90, spd: 4.0, atk: 10, awkT: 5 },
-            { id: 7, name: "吸血鬼", color: "#808", hp: 100, spd: 4.2, atk: 16, awkT: 3 },
-            { id: 8, name: "サイボーグ", color: "#789", hp: 180, spd: 3.2, atk: 25, awkT: 4 },
-            { id: 9, name: "超能力", color: "#0ff", hp: 75, spd: 4.5, atk: 12, awkT: 3 },
-            { id: 10, name: "狂戦士", color: "#b22", hp: 130, spd: 4.5, atk: 35, awkT: 1 },
-            { id: 11, name: "幽霊", color: "#ccf", hp: 55, spd: 5.0, atk: 14, awkT: 2 },
+            { id: 7, name: "ヴァンピ", color: "#808", hp: 100, spd: 4.2, atk: 16, awkT: 3 },
+            { id: 8, name: "サイボグ", color: "#789", hp: 180, spd: 3.2, atk: 25, awkT: 4 },
+            { id: 9, name: "エスパー", color: "#0ff", hp: 75, spd: 4.5, atk: 12, awkT: 3 },
+            { id: 10, name: "バサカ", color: "#b22", hp: 130, spd: 4.5, atk: 35, awkT: 1 },
+            { id: 11, name: "ゴースト", color: "#ccf", hp: 55, spd: 5.0, atk: 14, awkT: 2 },
             { id: 12, name: "サムライ", color: "#c55", hp: 115, spd: 4.2, atk: 30, awkT: 5 },
-            { id: 13, name: "魔王", color: "#438", hp: 85, spd: 3.8, atk: 22, awkT: 2 },
-            { id: 14, name: "賭博師", color: "#f19", hp: 100, spd: 4.0, atk: 8, awkT: 5 },
-            { id: 15, name: "衛生兵", color: "#fff", hp: 120, spd: 3.5, atk: 12, awkT: 3 },
-            { id: 16, name: "弓兵", color: "#282", hp: 95, spd: 4.3, atk: 24, awkT: 5 },
-            { id: 17, name: "異星人", color: "#7f0", hp: 100, spd: 4.8, atk: 18, awkT: 4 },
-            { id: 18, name: "龍王", color: "#d13", hp: 220, spd: 3.8, atk: 35, awkT: 1 },
-            { id: 19, name: "神", color: "#fe0", hp: 999, spd: 6.0, atk: 99, awkT: 2 }
+            { id: 13, name: "リッチ", color: "#438", hp: 85, spd: 3.8, atk: 22, awkT: 2 },
+            { id: 14, name: "ギャンブ", color: "#f19", hp: 100, spd: 4.0, atk: 8, awkT: 5 },
+            { id: 15, name: "ドクター", color: "#fff", hp: 120, spd: 3.5, atk: 12, awkT: 3 },
+            { id: 16, name: "アチャ", color: "#282", hp: 95, spd: 4.3, atk: 24, awkT: 5 },
+            { id: 17, name: "エイリ", color: "#7f0", hp: 100, spd: 4.8, atk: 18, awkT: 4 },
+            { id: 18, name: "ドラゴン", color: "#d13", hp: 220, spd: 3.8, atk: 35, awkT: 1 },
+            { id: 19, name: "カミサマ", color: "#fe0", hp: 999, spd: 6.0, atk: 99, awkT: 2 }
         ];
 
-        let state = 'LOGIN', mode = 'NORMAL', playTime = 300, frame = 0, currentGain = 0;
-        let p, enemies=[], bullets=[], gems=[], texts=[];
-        let targetPos = { x: 0, y: 0 }, isBoss = false;
+        // --- グローバル変数 ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let W, H, saveData = { name: "", coins: 0, unlocked: 1, chars: [0], selected: 0, awakened: [] };
+        let state = 'LOGIN', mode = 'NORMAL', playTime = 300, frame = 0, gainCoins = 0;
+        let p, enemies=[], bullets=[], gems=[], texts=[], targetPos = { x: 0, y: 0 }, isBoss = false;
 
-        // --- Firebase 通信 ---
-        async function cloudSave() { 
-            if(!saveData.name) return;
-            try { await set(ref(db, 'users/'+saveData.name), saveData); } catch(e) { console.error("Save Error", e); }
-        }
+        const resize = () => { W=window.innerWidth; H=window.innerHeight; canvas.width=W; canvas.height=H; };
+        window.addEventListener('resize', resize); resize();
 
+        // --- データ同期 ---
+        async function cloudSave() { if(saveData.name) await set(ref(db, 'users/'+saveData.name), saveData); }
         async function cloudLoad(name) {
-            try {
-                const snap = await get(ref(db, 'users/'+name));
-                if(snap.exists()) { 
-                    saveData = snap.val(); 
-                    if(!saveData.awakened) saveData.awakened = [];
-                    if(!saveData.chars) saveData.chars = [0];
-                    return true; 
-                }
-            } catch(e) { console.error("Load Error", e); alert("接続エラー: Firebaseのルールを確認してください"); }
+            const snap = await get(ref(db, 'users/'+name));
+            if(snap.exists()) { saveData = snap.val(); if(!saveData.awakened) saveData.awakened=[]; return true; }
             return false;
         }
 
-        // --- ログイン処理 ---
+        // --- UI 操作 ---
         document.getElementById('btn-login').onclick = async () => {
             const n = document.getElementById('input-name').value.trim();
-            if(!n) return alert("名前を入れてね");
-            document.getElementById('login-loading').style.display = "block";
-            
-            if(!await cloudLoad(n)) {
-                saveData.name = n;
-                await cloudSave();
-            }
-            document.getElementById('login-loading').style.display = "none";
+            if(!n) return;
+            document.getElementById('btn-login').innerText = "通信中...";
+            if(!await cloudLoad(n)) { saveData.name = n; await cloudSave(); }
             goHome();
         };
 
@@ -184,7 +160,7 @@
             state = 'HOME';
             document.getElementById('user-name').innerText = saveData.name;
             document.getElementById('user-coins').innerText = saveData.coins.toLocaleString();
-            renderCharGrid();
+            renderChars();
             const sel = document.getElementById('stage-select'); sel.innerHTML = "";
             for(let i=1; i<=30; i++) {
                 let o = document.createElement('option'); o.value=i; o.innerText=`Stage ${i}`;
@@ -194,34 +170,29 @@
             hideAll(); document.getElementById('screen-home').classList.remove('hidden');
         }
 
-        function renderCharGrid() {
+        function renderChars() {
             const list = document.getElementById('char-list'); list.innerHTML = "";
             CHARS.forEach(c => {
-                const isOwned = saveData.chars.includes(c.id);
-                const isAwakened = saveData.awakened.includes(c.id);
+                const owned = saveData.chars.includes(c.id); const awakened = saveData.awakened.includes(c.id);
                 const div = document.createElement('div');
-                div.className = `box ${isOwned?'owned':''} ${saveData.selected===c.id?'selected':''} ${isAwakened?'awakened':''}`;
-                div.innerHTML = `<strong>${isOwned?c.name:'???'}</strong><br>${isAwakened?'★AWK':''}`;
-                if(isOwned) div.onclick = () => { saveData.selected = c.id; cloudSave(); renderCharGrid(); };
+                div.className = `box ${owned?'owned':''} ${saveData.selected===c.id?'selected':''} ${awakened?'awakened':''}`;
+                div.innerHTML = `<strong>${owned?c.name:'???'}</strong><br>${awakened?'★覚醒済':''}`;
+                if(owned) div.onclick = () => { saveData.selected=c.id; cloudSave(); renderChars(); };
                 list.appendChild(div);
             });
         }
 
-        // --- レイドマッチング ---
+        // --- レイドロジック ---
         document.getElementById('btn-raid-menu').onclick = () => { hideAll(); document.getElementById('screen-raid').classList.remove('hidden'); };
         document.getElementById('btn-join-raid').onclick = async () => {
             const pass = document.getElementById('raid-pass').value;
-            if(!pass) return;
             const rRef = ref(db, 'rooms/'+pass);
-            document.getElementById('raid-status').innerText = "マッチング中...";
+            document.getElementById('raid-status').innerText = "相手を探しています...";
             
             const snap = await get(rRef);
             if(!snap.exists()) {
-                await set(rRef, { host: saveData.name, status: "wait", char: saveData.selected });
-                onValue(rRef, (s) => {
-                    const data = s.val();
-                    if(data?.status === "start") { off(rRef); initGame('RAID'); }
-                });
+                await set(rRef, { host: saveData.name, status: "wait" });
+                onValue(rRef, s => { if(s.val()?.status === "start") { off(rRef); initGame('RAID'); } });
             } else {
                 await update(rRef, { status: "start", guest: saveData.name });
                 initGame('RAID');
@@ -231,125 +202,105 @@
         // --- ガチャ ---
         document.getElementById('btn-gacha-menu').onclick = () => { hideAll(); document.getElementById('screen-gacha').classList.remove('hidden'); };
         document.getElementById('btn-pull').onclick = () => {
-            if(saveData.coins < 1000) return alert("コインが足りないよ");
+            if(saveData.coins < 1000) return alert("コインが足りません");
             saveData.coins -= 1000;
-            const id = Math.random() < 0.05 ? 19 : Math.floor(Math.random()*19);
+            const id = Math.random()<0.02 ? 19 : Math.floor(Math.random()*19);
             const res = document.getElementById('gacha-res');
-            if(saveData.chars.includes(id)) { res.innerText = `${CHARS[id].name} (被り +300C)`; saveData.coins += 300; }
-            else { res.innerText = `NEW!! ${CHARS[id].name}`; saveData.chars.push(id); }
-            cloudSave(); document.getElementById('user-coins').innerText = saveData.coins.toLocaleString(); renderCharGrid();
+            if(saveData.chars.includes(id)) { res.innerText = `${CHARS[id].name} (被り+300C)`; saveData.coins+=300; }
+            else { res.innerText = `NEW! ${CHARS[id].name}`; saveData.chars.push(id); }
+            cloudSave(); document.getElementById('user-coins').innerText = saveData.coins.toLocaleString(); renderChars();
         };
 
-        // --- ゲームコア ---
+        // --- ゲームエンジン ---
         function initGame(m) {
-            mode = m; frame = 0; playTime = 300; currentGain = 0; isBoss = false;
+            mode = m; frame = 0; playTime = 300; gainCoins = 0; isBoss = false;
             const c = CHARS[saveData.selected];
             p = { 
                 x: W/2, y: H/2, size: 16, hp: c.hp, max: c.hp, lv: 1, exp: 0, next: 5, color: c.color, cid: c.id, awkT: c.awkT,
-                multi: 1, power: c.atk, spd: c.spd, mag: 130, awake: saveData.awakened.includes(c.id)
+                multi: 1, power: c.atk, spd: c.spd, mag: 150, awake: saveData.awakened.includes(c.id)
             };
-            enemies=[]; bullets=[]; gems=[]; texts=[];
-            targetPos = { x: p.x, y: p.y }; 
+            enemies=[]; bullets=[]; gems=[]; texts=[]; targetPos = { x: p.x, y: p.y }; 
             state = 'PLAYING';
             hideAll(); document.getElementById('ui-layer').classList.remove('hidden');
             document.getElementById('ui-name').innerText = c.name + (p.awake?"★":"");
-            if(mode === 'RAID') spawnRaidBoss();
+            if(mode==='RAID') spawnRaidBoss();
             loop();
         }
 
         function fireSkill(x, y, t, dmg, isE) {
             const col = isE ? "#f33" : "#f0f";
-            if(t===1) bullets.push({x,y,vx:Math.cos(frame/5)*10, vy:Math.sin(frame/5)*10, life:100, dmg:dmg*3, isE, sz:28, col, pierce:true});
-            if(t===2) { for(let i=0;i<12;i++){ let a=i*Math.PI/6; bullets.push({x,y,vx:Math.cos(a)*7, vy:Math.sin(a)*7, life:80, dmg, isE, sz:12, col}); } }
+            if(t===1) bullets.push({x,y,vx:Math.cos(frame/5)*10, vy:Math.sin(frame/5)*10, life:100, dmg:dmg*3, isE, sz:30, col, pierce:true});
+            if(t===2) for(let i=0;i<12;i++){ let a=i*Math.PI/6; bullets.push({x,y,vx:Math.cos(a)*8, vy:Math.sin(a)*8, life:80, dmg, isE, sz:12, col}); }
             if(t===3) bullets.push({x,y,vx:0, vy:0, life:150, dmg:dmg*2, isE, sz:18, col, track:true});
-            if(t===4) { let a = Math.atan2(p.y-y, p.x-x); bullets.push({x,y,vx:Math.cos(a)*25, vy:Math.sin(a)*25, life:45, dmg:dmg*5, isE, sz:15, col, pierce:true}); }
-            if(t===5) { for(let i=0;i<5;i++) bullets.push({x,y,vx:Math.cos(frame+i)*14, vy:Math.sin(frame+i)*14, life:60, dmg, isE, sz:8, col}); }
+            if(t===4) { let a = Math.atan2(p.y-y, p.x-x); bullets.push({x,y,vx:Math.cos(a)*25, vy:Math.sin(a)*25, life:45, dmg:dmg*6, isE, sz:15, col, pierce:true}); }
+            if(t===5) for(let i=0;i<5;i++) bullets.push({x,y,vx:Math.cos(frame+i)*15, vy:Math.sin(frame+i)*15, life:60, dmg, isE, sz:10, col});
         }
 
         function spawnRaidBoss() {
-            isBoss = true;
+            isBoss=true;
             const c = CHARS[saveData.selected]; 
-            enemies.push({
-                x: W/2, y: -200, sz: 55, hp: 120000, max: 120000, spd: 1.6, 
-                isB: true, raid: true, awkT: c.awkT, col: c.color, inv: true
-            });
+            enemies.push({x:W/2, y:-200, sz:p.size*3, hp:150000, max:150000, spd:1.7, isB:true, raid:true, awkT:c.awkT, col:c.color, inv:true});
             notice("RAID BOSS: ABSOLUTE DEFENSE (2MIN)");
-        }
-
-        function spawnNormalBoss() {
-            isBoss = true; enemies = [];
-            let s = parseInt(document.getElementById('stage-select').value);
-            let h = 6000 * (1 + s*0.4);
-            enemies.push({x: W/2, y: -100, sz: 80, hp: h, max: h, spd: 1.1, isB: true, raid: false, col: "#800"});
-            notice("BOSS APPEARED!");
         }
 
         function update() {
             if(state !== 'PLAYING') return;
             frame++;
             if(frame % 60 === 0) { 
-                playTime--; currentGain += 2; 
-                if(mode === 'NORMAL' && playTime === 180) spawnNormalBoss();
-                if(playTime <= 0) finish(true);
+                playTime--; gainCoins+=3; 
+                if(mode==='NORMAL' && playTime===180) spawnNormalBoss();
+                if(playTime<=0) finish(true);
             }
 
             p.x += (targetPos.x - p.x) * 0.12 * (p.spd/4);
             p.y += (targetPos.y - p.y) * 0.12 * (p.spd/4);
 
-            // プレイヤー攻撃
+            // 自機攻撃
             if(frame % 15 === 0 && enemies.length > 0) {
                 let e = enemies[0]; let a = Math.atan2(e.y-p.y, e.x-p.x);
-                for(let i=0; i<p.multi; i++) 
-                    bullets.push({x:p.x, y:p.y, vx:Math.cos(a+(i-p.multi/2)*0.2)*13, vy:Math.sin(a+(i-p.multi/2)*0.2)*13, life:55, dmg:p.power, isE:false, sz:6, col:"#ff0"});
+                for(let i=0; i<p.multi; i++) bullets.push({x:p.x,y:p.y,vx:Math.cos(a+(i-p.multi/2)*0.2)*14, vy:Math.sin(a+(i-p.multi/2)*0.2)*14, life:55, dmg:p.power, isE:false, sz:6, col:"#ff0"});
             }
-            if(p.awake && frame % 85 === 0) fireSkill(p.x, p.y, p.awkT, p.power, false);
+            if(p.awake && frame % 90 === 0) fireSkill(p.x, p.y, p.awkT, p.power, false);
 
-            // 敵生成
-            if(!isBoss && frame % 30 === 0) {
+            // 敵・弾・ジェムの処理
+            if(!isBoss && frame % 35 === 0) {
                 let x = Math.random()<0.5?-50:W+50; let y = Math.random()*H;
-                enemies.push({x,y,sz:14,hp:12*(1+(300-playTime)/60),max:12,spd:1.6,isB:false,col:"#f44"});
+                enemies.push({x,y,sz:14,hp:12*(1+(300-playTime)/60),max:12,spd:1.8,isB:false,col:"#f44"});
             }
 
-            // 衝突判定
             bullets.forEach((b, i) => {
                 b.x += b.vx; b.y += b.vy; b.life--;
-                if(b.track && frame % 5 === 0) {
-                    let t = b.isE ? p : (enemies[0] || b); let a = Math.atan2(t.y-b.y, t.x-b.x);
-                    b.vx += Math.cos(a)*2; b.vy += Math.sin(a)*2;
+                if(b.track && frame%5===0) {
+                    let t = b.isE?p:(enemies[0]||b); let a = Math.atan2(t.y-b.y, t.x-b.x);
+                    b.vx+=Math.cos(a)*2.5; b.vy+=Math.sin(a)*2.5;
                 }
-                if(b.isE && Math.hypot(p.x-b.x, p.y-b.y) < p.size+b.sz) {
-                    p.hp -= b.dmg; if(!b.pierce) b.life = 0; if(p.hp <= 0) finish(false);
-                }
-                if(b.life <= 0) bullets.splice(i,1);
+                if(b.isE && Math.hypot(p.x-b.x, p.y-b.y)<p.size+b.sz) { p.hp-=b.dmg; if(!b.pierce) b.life=0; if(p.hp<=0) finish(false); }
+                if(b.life<=0) bullets.splice(i,1);
             });
 
             enemies.forEach((e, i) => {
                 let a = Math.atan2(p.y-e.y, p.x-e.x);
                 e.x += Math.cos(a)*e.spd; e.y += Math.sin(a)*e.spd;
                 if(e.isB) {
-                    e.inv = (playTime > 180); // レイドボス2分間無敵
-                    if(frame % 90 === 0) fireSkill(e.x, e.y, e.awkT, 25, true);
+                    e.inv = (playTime > 180); 
+                    if(frame % 100 === 0) fireSkill(e.x, e.y, e.awkT, 35, true);
                 }
                 bullets.forEach(b => {
-                    if(!b.isE && Math.hypot(e.x-b.x, e.y-b.y) < e.sz+b.sz) {
-                        let d = e.inv ? 1 : b.dmg; e.hp -= d; 
-                        texts.push({x:e.x, y:e.y, t:Math.floor(d), l:25}); 
-                        if(!b.pierce) b.life = 0;
+                    if(!b.isE && Math.hypot(e.x-b.x, e.y-b.y)<e.sz+b.sz) {
+                        let d = e.inv ? 1 : b.dmg; e.hp-=d; texts.push({x:e.x,y:e.y,t:Math.floor(d),l:20}); if(!b.pierce) b.life=0;
                     }
                 });
-                if(e.hp <= 0) {
-                    if(e.isB) { isBoss = false; currentGain += e.raid ? 10000 : 1500; playTime = Math.min(playTime, 20); }
-                    gems.push({x:e.x, y:e.y, v:e.isB?100:1}); enemies.splice(i,1);
+                if(e.hp<=0) {
+                    if(e.isB) { isBoss=false; gainCoins+=e.raid?12000:2000; playTime=Math.min(playTime,25);}
+                    gems.push({x:e.x,y:e.y,v:e.isB?100:1}); enemies.splice(i,1);
                 }
-                if(Math.hypot(p.x-e.x, p.y-e.y) < p.size+e.sz) {
-                    p.hp -= e.isB ? 3 : 0.8; if(p.hp <= 0) finish(false);
-                }
+                if(Math.hypot(p.x-e.x, p.y-e.y)<p.size+e.sz) { p.hp-=e.isB?4:1.2; if(p.hp<=0) finish(false); }
             });
 
             gems.forEach((g, i) => {
                 let d = Math.hypot(p.x-g.x, p.y-g.y);
-                if(d < p.mag) { let a = Math.atan2(p.y-g.y, p.x-g.x); g.x+=Math.cos(a)*12; g.y+=Math.sin(a)*12; }
-                if(d < 20) { p.exp += g.v; gems.splice(i,1); if(p.exp >= p.next) lvUp(); }
+                if(d < p.mag) { let a = Math.atan2(p.y-g.y, p.x-g.x); g.x+=Math.cos(a)*15; g.y+=Math.sin(a)*15; }
+                if(d < 20) { p.exp+=g.v; gems.splice(i,1); if(p.exp>=p.next) lvUp(); }
             });
             texts.forEach((t, i) => { t.y--; t.l--; if(t.l<=0) texts.splice(i,1); });
 
@@ -362,51 +313,51 @@
             gems.forEach(g => { ctx.fillStyle="#0f8"; ctx.beginPath(); ctx.arc(g.x,g.y,4,0,7); ctx.fill(); });
             bullets.forEach(b => { ctx.fillStyle=b.col; ctx.beginPath(); ctx.arc(b.x,b.y,b.sz,0,7); ctx.fill(); });
             enemies.forEach(e => {
-                ctx.fillStyle = e.inv ? "#555" : e.col; ctx.beginPath(); ctx.arc(e.x,e.y,e.sz,0,7); ctx.fill();
+                ctx.fillStyle = e.inv ? "#666" : e.col; ctx.beginPath(); ctx.arc(e.x,e.y,e.sz,0,7); ctx.fill();
                 ctx.fillStyle="red"; ctx.fillRect(e.x-e.sz, e.y-e.sz-12, e.sz*2*(e.hp/e.max), 6);
             });
             ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,7); ctx.fill();
-            ctx.strokeStyle = p.awake ? "#f0f" : "#fff"; ctx.lineWidth=3; ctx.stroke();
-            ctx.fillStyle="#f00"; ctx.fillRect(p.x-20, p.y+22, 40, 5); 
-            ctx.fillStyle="#0f0"; ctx.fillRect(p.x-20, p.y+22, 40*(p.hp/p.max), 5);
-            ctx.fillStyle="#fff"; ctx.font="bold 15px sans-serif";
-            texts.forEach(t => { ctx.globalAlpha=t.l/25; ctx.fillText(t.t, t.x, t.y); }); ctx.globalAlpha=1;
+            ctx.strokeStyle = p.awake?"#f0f":"#fff"; ctx.lineWidth=3; ctx.stroke();
+            ctx.fillStyle="#f00"; ctx.fillRect(p.x-20, p.y+22, 40, 5); ctx.fillStyle="#0f0"; ctx.fillRect(p.x-20, p.y+22, 40*(p.hp/p.max), 5);
+            ctx.fillStyle="#fff"; ctx.font="bold 16px sans-serif"; texts.forEach(t => { ctx.globalAlpha=t.l/20; ctx.fillText(t.t, t.x, t.y); }); ctx.globalAlpha=1;
         }
 
         function lvUp() {
-            state='LVUP'; p.lv++; p.exp=0; p.next = Math.floor(p.next*1.5);
+            state='LVUP'; p.lv++; p.exp=0; p.next=Math.floor(p.next*1.5);
             document.getElementById('ui-lv').innerText = `Lv.${p.lv}`;
             document.getElementById('screen-levelup').classList.remove('hidden');
             const list = document.getElementById('skill-list'); list.innerHTML="";
-            const sks = [{n:"連射+1", f:()=>p.multi++}, {n:"威力+15", f:()=>p.power+=15}, {n:"磁力UP", f:()=>p.mag+=80}, {n:"速度UP", f:()=>p.spd+=0.7}, {n:"全回復", f:()=>p.hp=p.max}];
-            sks.sort(()=>Math.random()-0.5).slice(0,3).forEach(s => {
-                let d = document.createElement('button'); d.innerText = s.n; d.style.display="block"; d.style.width="200px";
+            [{n:"連射+1", f:()=>p.multi++}, {n:"威力+12", f:()=>p.power+=12}, {n:"磁力+100", f:()=>p.mag+=100}, {n:"速度+0.7", f:()=>p.spd+=0.7}, {n:"HP回復", f:()=>p.hp=p.max}]
+            .sort(()=>Math.random()-0.5).slice(0,3).forEach(s => {
+                let d = document.createElement('button'); d.innerText=s.n; d.style.display="block";
                 d.onclick=()=>{ s.f(); state='PLAYING'; document.getElementById('screen-levelup').classList.add('hidden'); loop(); };
                 list.appendChild(d);
             });
         }
 
+        function spawnNormalBoss() { isBoss=true; enemies=[]; let s=parseInt(document.getElementById('stage-select').value); let h=6000*(1+s*0.5); enemies.push({x:W/2,y:-100,sz:85,hp:h,max:h,spd:1.2,isB:true,raid:false,col:"#800"}); notice("BOSS APPEARED"); }
+
         async function finish(win) {
             state='RESULT'; 
-            if(win && mode==='NORMAL' && saveData.unlocked == parseInt(document.getElementById('stage-select').value)) saveData.unlocked++;
-            saveData.coins += currentGain; await cloudSave();
+            if(win && mode==='NORMAL' && saveData.unlocked==parseInt(document.getElementById('stage-select').value)) saveData.unlocked++;
+            saveData.coins += gainCoins; await cloudSave();
             hideAll(); document.getElementById('screen-result').classList.remove('hidden');
             document.getElementById('res-title').innerText = win ? "MISSION CLEAR!" : "DEFEATED...";
-            document.getElementById('res-coins').innerText = currentGain.toLocaleString();
+            document.getElementById('res-coins').innerText = gainCoins.toLocaleString();
             if(win && mode==='RAID' && !p.awake) document.getElementById('awaken-box').classList.remove('hidden');
             else document.getElementById('awaken-box').classList.add('hidden');
             if(mode==='RAID') { const pass = document.getElementById('raid-pass').value; remove(ref(db, 'rooms/'+pass)); }
         }
 
         document.getElementById('btn-awaken-act').onclick = async () => {
-            if(saveData.coins < 30000) return alert("コインが足りません");
+            if(saveData.coins < 30000) return alert("コイン不足");
             saveData.coins -= 30000; saveData.awakened.push(p.cid); await cloudSave();
-            alert("覚醒に成功しました！"); goHome();
+            alert("覚醒に成功！"); goHome();
         };
 
         function loop() { if(state==='PLAYING'){ update(); draw(); requestAnimationFrame(loop); } }
         function hideAll() { document.querySelectorAll('.overlay, #ui-layer').forEach(e=>e.classList.add('hidden')); }
-        function notice(t) { const n=document.getElementById('boss-notice'); n.innerText=t; n.style.display='block'; setTimeout(()=>n.style.display='none',3000); }
+        function notice(t) { const n=document.getElementById('boss-notice'); n.innerText=t; n.style.display='block'; setTimeout(()=>n.style.display='none',3500); }
 
         window.addEventListener('mousemove', e=>{ if(state==='PLAYING') {targetPos.x=e.clientX; targetPos.y=e.clientY;} });
         window.addEventListener('touchmove', e=>{ if(state==='PLAYING') {targetPos.x=e.touches[0].clientX; targetPos.y=e.touches[0].clientY;} });
@@ -414,7 +365,6 @@
         document.getElementById('btn-home-gacha').onclick = goHome;
         document.getElementById('btn-back-home').onclick = goHome;
         document.getElementById('btn-cancel-raid').onclick = goHome;
-
     </script>
 </body>
 </html>
