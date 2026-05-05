@@ -3,218 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>JS SURVIVOR - ULTIMATE CLOUD</title>
+    <title>JS SURVIVOR - GOD EDITION</title>
     <style>
         body { margin:0; overflow:hidden; background:#050510; font-family:sans-serif; touch-action:none; color:white; user-select:none; }
         canvas { display:block; }
-        .overlay { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:rgba(0,0,0,0.9); z-index:20; backdrop-filter: blur(8px); }
+        .overlay { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:rgba(0,0,0,0.92); z-index:20; backdrop-filter: blur(10px); }
         .hidden { display:none !important; }
-        h1 { font-size:36px; color:#00ffcc; text-shadow:0 0 15px #00ffcc; margin-bottom:10px; }
-        button, input { font-size:16px; padding:12px 20px; margin:5px; border-radius:8px; background:#1a1a2e; color:white; border:2px solid #444; cursor:pointer; font-weight:bold; }
-        button:hover { border-color:#00ffcc; background:#2a2a4e; }
-        
-        /* UI レイアウト */
-        #ui-layer { position:absolute; top:0; left:0; width:100%; padding:15px; pointer-events:none; z-index:10; }
-        .stats-row { display:flex; justify-content:space-between; font-size:18px; font-weight:bold; text-shadow: 2px 2px 2px black; }
-        #exp-bg { width:100%; height:12px; background:#222; border-radius:6px; margin-top:8px; border:1px solid #444; overflow:hidden; }
-        #exp-bar { width:0%; height:100%; background:linear-gradient(90deg, #00ffcc, #0088ff); transition: width 0.3s; }
-        
-        /* メニュー用グリッド */
-        .grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; max-height:40vh; overflow-y:auto; padding:15px; background:rgba(255,255,255,0.05); border-radius:10px; border:1px solid #333; }
-        .box { border:2px solid #444; padding:10px; text-align:center; border-radius:8px; cursor:pointer; background:#111; font-size:12px; transition: 0.2s; }
+        h1 { font-size:36px; color:#00ffcc; text-shadow:0 0 20px #00ffcc; margin-bottom:10px; }
+        button, input { font-size:16px; padding:12px 24px; margin:8px; border-radius:12px; background:#1a1a2e; color:white; border:2px solid #444; cursor:pointer; font-weight:bold; transition:0.2s; }
+        button:hover { border-color:#00ffcc; background:#2a2a4e; transform: scale(1.05); }
+        .grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; max-height:45vh; overflow-y:auto; padding:15px; background:rgba(255,255,255,0.05); border-radius:15px; border:1px solid #333; }
+        .box { border:2px solid #444; padding:12px; text-align:center; border-radius:10px; cursor:pointer; background:#111; font-size:13px; }
         .box.owned { border-color:#0088ff; color:#00ccff; }
-        .box.selected { background:#00ffcc; color:black; border-color:#fff; transform: scale(1.05); }
-        .box.locked { opacity:0.3; cursor:not-allowed; border-style: dotted; }
-        
-        .skill-card { background:#1a1a2e; border:2px solid #00ffcc; border-radius:10px; padding:15px; margin:8px; width:200px; text-align:center; cursor:pointer; pointer-events:auto; box-shadow: 0 0 10px rgba(0,255,204,0.3); }
-        #boss-warning { position:absolute; top:25%; width:100%; text-align:center; font-size:40px; color:red; font-weight:bold; display:none; z-index:30; animation: flash 0.5s infinite; text-shadow: 0 0 20px black; }
-        @keyframes flash { 0% {opacity:1} 50% {opacity:0.2} }
+        .box.selected { background:#00ffcc; color:black; border-color:#fff; box-shadow: 0 0 15px #00ffcc; }
+        .box.locked { opacity:0.2; cursor:not-allowed; }
+        #ui-layer { position:absolute; top:0; left:0; width:100%; padding:15px; pointer-events:none; z-index:10; }
+        .stats-row { display:flex; justify-content:space-between; font-weight:bold; font-size:20px; text-shadow: 2px 2px 2px #000; }
+        #exp-bg { width:100%; height:12px; background:#222; border-radius:6px; margin-top:10px; border:1px solid #444; overflow:hidden; }
+        #exp-bar { width:0%; height:100%; background:linear-gradient(90deg, #00ffcc, #0088ff); transition: 0.3s; }
+        .skill-card { background:#1a1a2e; border:2px solid #00ffcc; border-radius:12px; padding:20px; margin:10px; width:200px; text-align:center; cursor:pointer; pointer-events:auto; box-shadow:0 0 15px rgba(0,255,204,0.2); }
+        #boss-warn { position:absolute; top:20%; width:100%; text-align:center; font-size:50px; color:#ff0044; font-weight:900; display:none; z-index:30; animation: pulse 0.6s infinite; text-shadow: 0 0 20px #000; }
+        @keyframes pulse { 0% {transform:scale(1)} 50% {transform:scale(1.1)} 100% {transform:scale(1)} }
     </style>
 </head>
 <body>
 
     <div id="screen-login" class="overlay">
         <h1>JS SURVIVOR</h1>
-        <p>名前を入力してクラウドデータをロード</p>
-        <input type="text" id="player-name-input" placeholder="名前 (例: たろう)" maxlength="10">
-        <button id="btn-login" style="background:#0088ff; border-color:#fff;">ログイン / 新規登録</button>
+        <p style="color:#aaa;">CLOUD DATA ACCESS</p>
+        <input type="text" id="player-name-input" placeholder="名前を入力" maxlength="10">
+        <button id="btn-login" style="background:#0088ff; border-color:#fff;">クラウドログイン</button>
     </div>
 
     <div id="screen-home" class="overlay hidden">
-        <h2 id="disp-name" style="margin:5px;"></h2>
-        <p style="font-size:20px;">💰 コイン: <span id="disp-coins" style="color:#ffcc00;">0</span></p>
-        
+        <h2 id="disp-name" style="color:#00ffcc;"></h2>
+        <p style="font-size:22px;">💰 <span id="disp-coins" style="color:#ffcc00;">0</span> C</p>
         <div style="width:90%;">
-            <h3 style="margin:5px;">ステージ選択 (オフライン 1-30)</h3>
+            <h3 style="margin-bottom:10px;">ステージを選択 (全30ステージ)</h3>
             <div id="stage-list" class="grid"></div>
         </div>
-
-        <div style="margin-top:10px;">
-            <button id="btn-start-offline" style="background:#00ffcc; color:black;">ソロ出撃</button>
+        <div style="margin-top:20px;">
+            <button id="btn-start-offline" style="background:#00ffcc; color:black; width:120px;">出撃</button>
             <button id="btn-gacha" style="background:#ffcc00; color:black;">ガチャ (1000C)</button>
             <button id="btn-char-menu">キャラ変更</button>
         </div>
-
-        <div style="border:2px solid #f0f; padding:15px; margin-top:15px; border-radius:10px; background:rgba(255,0,255,0.1);">
-            <h4 style="margin:0 0 10px 0; color:#f0f;">ONLINE RAID (リアルタイム共闘)</h4>
-            ルームID: <input type="text" id="room-id" value="ROOM1" style="width:80px; text-align:center; padding:5px;">
-            <button id="btn-raid-start" style="background:#f0f;">共闘開始</button>
+        <div style="border:2px solid #f0f; padding:15px; margin-top:20px; border-radius:15px; background:rgba(255,0,255,0.1);">
+            <span style="color:#f0f; font-weight:bold;">ONLINE RAID:</span> 
+            <input type="text" id="room-id" value="ROOM1" style="width:80px; text-align:center;">
+            <button id="btn-raid-start" style="background:#f0f;">共闘</button>
         </div>
     </div>
 
     <div id="screen-chars" class="overlay hidden">
-        <h2>キャラクター選択</h2>
+        <h1>CHARACTER SELECT</h1>
         <div id="char-grid" class="grid"></div>
         <button id="btn-close-chars" style="margin-top:20px;">閉じる</button>
     </div>
 
     <div id="screen-levelup" class="overlay hidden">
-        <h2 style="color:#ffcc00; text-shadow:0 0 10px #ffcc00;">LEVEL UP! スキル選択</h2>
+        <h1 style="color:#ffcc00;">LEVEL UP!</h1>
         <div id="skill-container" style="display:flex; flex-wrap:wrap; justify-content:center;"></div>
     </div>
 
     <div id="screen-result" class="overlay hidden">
-        <h1 id="res-title">FINISHED</h1>
-        <p style="font-size:24px;">獲得コイン: <span id="res-coins" style="color:#ffcc00;">0</span></p>
-        <div id="awaken-ui" class="hidden" style="border:3px solid #f0f; padding:20px; border-radius:15px; margin-bottom:15px; text-align:center; background:rgba(0,0,0,0.5);">
-            <p style="color:#f0f; font-weight:bold;">★ 覚醒チャンス ★</p>
-            <p>このキャラを覚醒させますか？ (コスト: 30000C)</p>
-            <button id="btn-awaken" style="background:#f0f; font-size:20px;">覚醒させる</button>
+        <h1 id="res-title">STAGE CLEAR</h1>
+        <p style="font-size:24px;">獲得報酬: <span id="res-coins" style="color:#ffcc00;">0</span> C</p>
+        <div id="awaken-ui" class="hidden" style="border:3px solid #f0f; padding:20px; border-radius:15px; margin-bottom:15px; background:rgba(0,0,0,0.6);">
+            <p style="color:#f0f; font-weight:bold;">キャラクターが覚醒可能です！</p>
+            <button id="btn-awaken" style="background:#f0f; font-size:18px;">30000Cで覚醒を解放</button>
         </div>
-        <button id="btn-back-home" style="padding:15px 40px; font-size:20px;">ホームに戻る</button>
+        <button id="btn-back-home" style="padding:15px 40px; font-size:20px;">ホームへ</button>
     </div>
 
     <div id="ui-layer" class="hidden">
         <div class="stats-row">
-            <div>Stage: <span id="ui-stage">1</span></div>
-            <div id="timer" style="color:#ffcc00; font-size:24px;">03:00</div>
+            <div>STAGE <span id="ui-stage">1</span></div>
+            <div id="timer">02:00</div>
             <div id="ui-hp" style="color:#ff4444;">HP: 100%</div>
         </div>
         <div id="exp-bg"><div id="exp-bar"></div></div>
     </div>
 
-    <div id="boss-warning">WARNING: BOSS ALIVE</div>
+    <div id="boss-warn">BOSS APPEARED!</div>
     <canvas id="gameCanvas"></canvas>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, get, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase設定
         const firebaseConfig = { databaseURL: "https://game-2d503-default-rtdb.firebaseio.com" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- ゲームデータ定義 ---
-        const CHAR_DATA = [
-            { id: 0, name: "ルーキー", color: "#00aaff", hp: 100, spd: 4.0, atk: 15, awkT: 1 },
-            { id: 1, name: "ニンジャ", color: "#444444", hp: 70, spd: 5.5, atk: 12, awkT: 2 },
-            { id: 2, name: "タンク", color: "#8b4513", hp: 250, spd: 2.8, atk: 20, awkT: 1 },
-            { id: 3, name: "スナイパ", color: "#00ff00", hp: 80, spd: 3.5, atk: 45, awkT: 2 },
-            { id: 4, name: "マグネ", color: "#ff00ff", hp: 100, spd: 3.8, atk: 12, awkT: 1 },
-            { id: 5, name: "騎士", color: "#ffd700", hp: 160, spd: 3.2, atk: 18, awkT: 1 },
-            { id: 6, name: "幽霊", color: "#ffffff", hp: 50, spd: 5.0, atk: 15, awkT: 2 },
-            { id: 7, name: "竜王", color: "#ff0000", hp: 300, spd: 3.5, atk: 40, awkT: 2 },
-            { id: 19, name: "神様", color: "#ffff00", hp: 999, spd: 6.0, atk: 99, awkT: 2 }
-        ];
-        // 他のIDはループで生成
+        // --- データ定義 ---
+        const CHAR_DATA = [];
         for(let i=0; i<20; i++) {
-            if(!CHAR_DATA.find(c => c.id === i)) {
-                CHAR_DATA.push({ id: i, name: "キャラ"+i, color: `hsl(${i*40}, 70%, 50%)`, hp: 100, spd: 4, atk: 20, awkT: 1 });
-            }
+            CHAR_DATA.push({
+                id: i, name: i===19?"神":"キャラ"+i,
+                color: `hsl(${i*48}, 80%, 60%)`,
+                hp: i===19?1200:(120 + i*15),
+                spd: i===19?7.5:(5.5 + i*0.1), // 速度を全体的に底上げ
+                atk: i===19?120:(25 + i*6),
+                awkT: (i % 4)
+            });
         }
 
-        const SKILL_POOL = [
-            { id:'multi', name:'連射', desc:'同時発射数UP' }, { id:'power', name:'攻撃', desc:'威力UP' },
-            { id:'orbit', name:'バリア', desc:'周囲を回る弾' }, { id:'magnet', name:'磁石', desc:'回収範囲UP' },
-            { id:'speed', name:'加速', desc:'移動速度UP' }, { id:'heal', name:'回復', desc:'HP全回復' }
+        const SKILLS = [
+            { id:'multi', name:'連射', desc:'弾数が1増える' }, { id:'power', name:'威力', desc:'攻撃ダメージUP' },
+            { id:'orbit', name:'守護', desc:'周囲の魔法弾が増える' }, { id:'magnet', name:'磁石', desc:'アイテム回収範囲UP' },
+            { id:'speed', name:'神速', desc:'移動速度がさらにUP' }, { id:'heal', name:'治癒', desc:'HPを全回復する' }
         ];
 
-        // --- クラウドセーブデータ ---
         let playerName = "";
-        let saveData = {
-            coins: 500,
-            chars: [0], // 初期キャラ
-            awakened: [],
-            unlockedStage: 1,
-            selectedChar: 0,
-            currentStage: 1
-        };
+        let saveData = { coins: 1000, chars: [0], awakened: [], unlockedStage: 1, selectedChar: 0, currentStage: 1 };
 
-        async function saveToCloud() {
-            if(!playerName) return;
-            await set(ref(db, 'users/' + playerName), saveData);
-        }
+        async function syncCloud() { if(playerName) await set(ref(db, 'users/'+playerName), saveData); }
 
-        async function loadFromCloud(name) {
-            const snap = await get(ref(db, 'users/' + name));
-            if(snap.exists()) {
-                saveData = { ...saveData, ...snap.val() };
-            } else {
-                await saveToCloud(); // 新規作成
-            }
-            openHome();
-        }
-
-        // --- UI 操作 ---
-        document.getElementById('btn-login').onclick = () => {
+        // --- UI Logic ---
+        document.getElementById('btn-login').onclick = async () => {
             playerName = document.getElementById('player-name-input').value.trim();
-            if(!playerName) return alert("名前を入れてね");
-            loadFromCloud(playerName);
+            if(!playerName) return;
+            const snap = await get(ref(db, 'users/'+playerName));
+            if(snap.exists()) saveData = { ...saveData, ...snap.val() };
+            else await syncCloud();
+            openHome();
         };
 
         function openHome() {
-            state = 'HOME';
+            state = 'HOME'; showScreen('screen-home');
             document.getElementById('disp-name').innerText = "PLAYER: " + playerName;
             document.getElementById('disp-coins').innerText = saveData.coins;
-            renderStageList();
-            showScreen('screen-home');
+            renderStages();
         }
 
-        function renderStageList() {
+        function renderStages() {
             const list = document.getElementById('stage-list'); list.innerHTML = "";
             for(let i=1; i<=30; i++) {
                 const div = document.createElement('div');
-                const isLocked = i > saveData.unlockedStage;
-                div.className = `box ${isLocked?'locked':''} ${i===saveData.currentStage?'selected':''}`;
+                const locked = i > saveData.unlockedStage;
+                div.className = `box ${locked?'locked':''} ${i===saveData.currentStage?'selected':''}`;
                 div.innerText = i;
-                if(!isLocked) div.onclick = () => { saveData.currentStage = i; renderStageList(); saveToCloud(); };
+                if(!locked) div.onclick = () => { saveData.currentStage = i; renderStages(); syncCloud(); };
                 list.appendChild(div);
             }
         }
 
         document.getElementById('btn-char-menu').onclick = () => {
             showScreen('screen-chars');
-            const grid = document.getElementById('char-grid'); grid.innerHTML = "";
-            CHAR_DATA.sort((a,b)=>a.id-b.id).forEach(c => {
+            const g = document.getElementById('char-grid'); g.innerHTML = "";
+            CHAR_DATA.forEach(c => {
                 const owned = saveData.chars.includes(c.id);
-                const isAwk = saveData.awakened.includes(c.id);
                 const div = document.createElement('div');
                 div.className = `box ${owned?'owned':''} ${saveData.selectedChar===c.id?'selected':''}`;
-                div.innerHTML = `<b>${owned?c.name:'???'}</b>${isAwk?'<br>★覚醒':''}`;
-                if(owned) div.onclick = () => { saveData.selectedChar = c.id; saveToCloud(); document.getElementById('btn-close-chars').click(); };
-                grid.appendChild(div);
+                div.innerHTML = `<b>${owned?c.name:'???'}</b>${saveData.awakened.includes(c.id)?'<br><span style="color:magenta;">★AWAKE</span>':''}`;
+                if(owned) div.onclick = () => { saveData.selectedChar = c.id; syncCloud(); openHome(); };
+                g.appendChild(div);
             });
         };
         document.getElementById('btn-close-chars').onclick = openHome;
 
         document.getElementById('btn-gacha').onclick = async () => {
-            if(saveData.coins < 1000) return alert("コインが足りません！");
+            if(saveData.coins < 1000) return alert("コインが足りません");
             saveData.coins -= 1000;
-            const newId = Math.random() < 0.05 ? 19 : Math.floor(Math.random()*20);
-            if(!saveData.chars.includes(newId)) {
-                saveData.chars.push(newId);
-                alert("NEW!! キャラクター獲得: " + CHAR_DATA.find(c=>c.id===newId).name);
-            } else {
-                saveData.coins += 400; alert("重複のため400C還元されました。");
-            }
-            await saveToCloud();
-            openHome();
+            const id = Math.random() < 0.05 ? 19 : Math.floor(Math.random()*19);
+            if(!saveData.chars.includes(id)) { saveData.chars.push(id); alert("NEW CHARACTER! " + CHAR_DATA[id].name); }
+            else { saveData.coins += 400; alert("重複(400C還元)"); }
+            await syncCloud(); openHome();
         };
 
-        // --- ゲームエンジン本体 ---
-        let state = 'LOGIN', mode = 'OFFLINE', frame = 0, playTime = 180, scoreCoins = 0;
-        let player, partner, boss, enemies = [], bullets = [], gems = [], orbits = [];
+        // --- Game Engine ---
+        let state = 'LOGIN', mode = 'OFFLINE', frame = 0, playTime = 120, scoreCoins = 0;
+        let player, partner, boss, enemies = [], bullets = [], gems = [], bossBullets = [];
         let targetPos = { x: 0, y: 0 };
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -225,20 +184,17 @@
         document.getElementById('btn-start-offline').onclick = () => { mode = 'OFFLINE'; initGame(); };
         document.getElementById('btn-raid-start').onclick = () => { mode = 'RAID'; connectRaid(); };
 
-        // レイド同期
         let rid = ""; let isHost = false;
         function connectRaid() {
             rid = document.getElementById('room-id').value;
-            const rRef = ref(db, 'rooms/' + rid);
+            const rRef = ref(db, 'rooms/'+rid);
             onValue(rRef, (snap) => {
                 const data = snap.val();
                 if(!data) {
-                    isHost = true;
-                    set(rRef, { host: playerName, p1: { x:W/2, y:H/2, cid:saveData.selectedChar } });
+                    isHost = true; set(rRef, { host: playerName, p1: { x:W/2, y:H/2, cid:saveData.selectedChar } });
                     onDisconnect(rRef).remove();
                 } else if(data.host !== playerName) {
-                    isHost = false;
-                    update(ref(db, `rooms/${rid}/p2`), { x:W/2, y:H/2, cid:saveData.selectedChar });
+                    isHost = false; update(ref(db, `rooms/${rid}/p2`), { x:W/2, y:H/2, cid:saveData.selectedChar });
                 }
                 partner = isHost ? data?.p2 : data?.p1;
                 if(!isHost && data?.boss) boss = data.boss;
@@ -247,226 +203,221 @@
         }
 
         function initGame() {
-            state = 'PLAYING';
-            showScreen('none');
+            state = 'PLAYING'; showScreen('none');
             document.getElementById('ui-layer').classList.remove('hidden');
             document.getElementById('ui-stage').innerText = mode==='OFFLINE' ? saveData.currentStage : "RAID";
-            
             const c = CHAR_DATA.find(x=>x.id===saveData.selectedChar);
-            player = { ...c, x:W/2, y:H/2, level:1, exp:0, maxExp:6, maxHp:c.hp, curHp:c.hp, 
-                       stats:{ multi:1, power:c.atk, speed:c.spd, orbit:0, magnet:150 } };
-            
-            enemies = []; bullets = []; gems = []; orbits = []; boss = null;
-            playTime = 180; frame = 0; scoreCoins = 0;
+            player = { ...c, x:W/2, y:H/2, level:1, exp:0, maxExp:6, maxHp:c.hp, curHp:c.hp, stats:{ multi:1, power:c.atk, speed:c.spd, orbit:0, magnet:160 } };
+            enemies = []; bullets = []; gems = []; boss = null; bossBullets = []; frame = 0; scoreCoins = 0;
+            playTime = mode==='OFFLINE' ? 90 : 180; // オフラインは90秒でボス
             requestAnimationFrame(gameLoop);
         }
 
         function gameLoop() {
-            if(state === 'PLAYING') { updateGame(); drawGame(); }
-            if(state === 'LEVELUP') { drawGame(); }
+            if(state === 'PLAYING') update();
+            if(state === 'PLAYING' || state === 'LEVELUP') draw();
             if(state !== 'RESULT') requestAnimationFrame(gameLoop);
         }
 
-        function updateGame() {
+        function update() {
             frame++;
-            if(frame % 60 === 0) playTime--;
+            if(frame % 60 === 0 && playTime > 0) playTime--;
+            
+            // Player Move
+            const dx = targetPos.x - player.x, dy = targetPos.y - player.y, dist = Math.hypot(dx, dy);
+            if(dist > 5) { player.x += (dx/dist)*player.stats.speed; player.y += (dy/dist)*player.stats.speed; }
 
-            // 移動 (指・マウス追従 + 速度倍率)
-            const dx = (targetPos.x - player.x);
-            const dy = (targetPos.y - player.y);
-            const dist = Math.hypot(dx, dy);
-            if(dist > 5) {
-                player.x += (dx/dist) * player.stats.speed;
-                player.y += (dy/dist) * player.stats.speed;
-            }
-
-            // 同期
-            if(mode === 'RAID' && frame % 4 === 0) {
-                update(ref(db, `rooms/${rid}/${isHost?'p1':'p2'}`), { x: Math.floor(player.x), y: Math.floor(player.y) });
+            if(mode==='RAID' && frame%5===0) {
+                update(ref(db, `rooms/${rid}/${isHost?'p1':'p2'}`), { x:Math.floor(player.x), y:Math.floor(player.y) });
                 if(isHost && boss) update(ref(db, `rooms/${rid}/boss`), boss);
             }
 
-            // 敵出現 (ステージが上がるほど早く、強くなる)
-            const stageLvl = mode==='RAID' ? 15 : saveData.currentStage;
-            const spawnRate = Math.max(4, 45 - stageLvl);
-            if(frame % spawnRate === 0) {
-                const ang = Math.random() * Math.PI * 2;
-                const r = Math.max(W, H);
-                enemies.push({
-                    x: player.x + Math.cos(ang)*r, y: player.y + Math.sin(ang)*r,
-                    hp: 10 * (1 + stageLvl * 0.4), speed: 1.5 + (stageLvl*0.1), size: 18
-                });
+            // Enemy Spawn (Stage Scaling)
+            const lvl = mode==='RAID' ? 20 : saveData.currentStage;
+            if(frame % Math.max(4, 45-lvl) === 0) {
+                const a = Math.random()*Math.PI*2, r = Math.max(W, H)*0.8;
+                const ehp = 12 * (1 + lvl*0.45);
+                enemies.push({ x:player.x+Math.cos(a)*r, y:player.y+Math.sin(a)*r, hp:ehp, maxHp:ehp, speed:1.8+lvl*0.12, size:18 });
             }
 
-            // ボス (RAIDモードのみ)
-            if(mode==='RAID' && playTime === 160 && isHost && !boss) {
-                boss = { x:W/2, y:-200, hp:60000, max:60000, size:70 };
-                document.getElementById('boss-warning').style.display = 'block';
-                setTimeout(()=>document.getElementById('boss-warning').style.display='none', 3000);
+            // Boss Logic (Offline & Raid)
+            if((mode==='OFFLINE' && playTime <= 0 && !boss) || (mode==='RAID' && playTime === 160 && isHost && !boss)) {
+                const bHp = 2000 * (1 + lvl * 1.5);
+                boss = { x:W/2, y:-100, hp:bHp, max:bHp, size:70, type: lvl % 4, stateFrame: 0 };
+                document.getElementById('boss-warn').style.display = 'block';
+                setTimeout(() => document.getElementById('boss-warn').style.display='none', 3000);
             }
 
-            // 移動ロジック
-            enemies.forEach(e => {
-                const ang = Math.atan2(player.y - e.y, player.x - e.x);
-                e.x += Math.cos(ang) * e.speed; e.y += Math.sin(ang) * e.speed;
-            });
             if(boss) {
-                const ang = Math.atan2(player.y - boss.y, player.x - boss.x);
-                boss.x += Math.cos(ang) * 1.2; boss.y += Math.sin(ang) * 1.2;
+                boss.stateFrame++;
+                const a = Math.atan2(player.y-boss.y, player.x-boss.x);
+                // ボス能力の多様化
+                if(boss.type === 0) { // 突進型
+                    const s = (boss.stateFrame % 120 < 40) ? 6 : 1.2;
+                    boss.x += Math.cos(a)*s; boss.y += Math.sin(a)*s;
+                } else if(boss.type === 1) { // 弾幕型
+                    boss.x += Math.cos(a)*1.5; boss.y += Math.sin(a)*1.5;
+                    if(boss.stateFrame % 50 === 0) {
+                        for(let i=0; i<12; i++) {
+                            const ba = i * (Math.PI*2/12) + boss.stateFrame*0.01;
+                            bossBullets.push({x:boss.x, y:boss.y, vx:Math.cos(ba)*5, vy:Math.sin(ba)*5});
+                        }
+                    }
+                } else if(boss.type === 2) { // 召喚型
+                    boss.x += Math.cos(a)*1.8; boss.y += Math.sin(a)*1.8;
+                    if(boss.stateFrame % 100 === 0) {
+                        enemies.push({ x:boss.x, y:boss.y+80, hp:50, maxHp:50, speed:4, size:15 });
+                        enemies.push({ x:boss.x, y:boss.y-80, hp:50, maxHp:50, speed:4, size:15 });
+                    }
+                } else { // ジャンプ・不規則型
+                    if(boss.stateFrame % 80 < 20) { boss.x += Math.cos(a)*10; boss.y += Math.sin(a)*10; }
+                    else { boss.x += Math.cos(a)*0.5; boss.y += Math.sin(a)*0.5; }
+                }
             }
 
-            // オートターゲット射撃
+            enemies.forEach(e => {
+                const a = Math.atan2(player.y-e.y, player.x-e.x);
+                e.x += Math.cos(a)*e.speed; e.y += Math.sin(a)*e.speed;
+            });
+
+            // Player Auto-Shoot
             if(frame % 18 === 0 && (enemies.length > 0 || boss)) {
                 let target = boss || null;
                 if(!target) {
-                    let minDist = Infinity;
+                    let minD = Infinity;
                     enemies.forEach(e => {
                         const d = Math.hypot(e.x-player.x, e.y-player.y);
-                        if(d < minDist) { minDist = d; target = e; }
+                        if(d < minD) { minD = d; target = e; }
                     });
                 }
                 if(target) {
-                    const ang = Math.atan2(target.y - player.y, target.x - player.x);
+                    const a = Math.atan2(target.y-player.y, target.x-player.x);
                     for(let i=0; i<player.stats.multi; i++) {
-                        const offset = (i - (player.stats.multi-1)/2) * 0.2;
-                        bullets.push({ x:player.x, y:player.y, vx:Math.cos(ang+offset)*14, vy:Math.sin(ang+offset)*14, dmg:player.stats.power });
+                        const spread = (i - (player.stats.multi-1)/2) * 0.15;
+                        bullets.push({ x:player.x, y:player.y, vx:Math.cos(a+spread)*15, vy:Math.sin(a+spread)*15, dmg:player.stats.power });
                     }
-                    // 覚醒攻撃
                     if(saveData.awakened.includes(player.id)) {
-                        bullets.push({ x:player.x, y:player.y, vx:Math.cos(ang)*10, vy:Math.sin(ang)*10, dmg:player.stats.power*3, size:40, special:true });
+                        bullets.push({ x:player.x, y:player.y, vx:Math.cos(a)*12, vy:Math.sin(a)*12, dmg:player.stats.power*4, size:35, special:true });
                     }
                 }
             }
 
-            // バリア (Orbit)
-            if(player.stats.orbit > 0) {
-                for(let i=0; i<player.stats.orbit; i++) {
-                    const a = (frame*0.05) + (i * Math.PI*2 / player.stats.orbit);
-                    const ox = player.x + Math.cos(a)*80;
-                    const oy = player.y + Math.sin(a)*80;
-                    enemies.forEach(e => {
-                        if(Math.hypot(e.x-ox, e.y-oy) < 30) e.hp -= 2;
-                    });
-                }
-            }
-
-            // 当たり判定
+            // Bullet Collisions (★画面内判定)
             bullets.forEach((b, bi) => {
                 b.x += b.vx; b.y += b.vy;
                 if(boss && Math.hypot(boss.x-b.x, boss.y-b.y) < boss.size) {
                     boss.hp -= b.dmg; if(!b.special) bullets.splice(bi, 1);
-                    if(boss.hp <= 0 && isHost) endGame(true);
+                    if(boss.hp <= 0) endGame(true);
                 }
                 enemies.forEach((e, ei) => {
-                    if(Math.hypot(e.x-b.x, e.y-b.y) < e.size) {
+                    const inScreen = e.x > 0 && e.x < W && e.y > 0 && e.y < H;
+                    if(inScreen && Math.hypot(e.x-b.x, e.y-b.y) < e.size) {
                         e.hp -= b.dmg; if(!b.special) bullets.splice(bi, 1);
-                        if(e.hp <= 0) { gems.push({x:e.x, y:e.y}); enemies.splice(ei,1); }
+                        if(e.hp <= 0) { gems.push({x:e.x, y:e.y}); enemies.splice(ei, 1); }
                     }
                 });
-                if(Math.abs(b.x)>W*2 || Math.abs(b.y)>H*2) bullets.splice(bi, 1);
+                if(b.x < -100 || b.x > W+100 || b.y < -100 || b.y > H+100) bullets.splice(bi, 1);
             });
 
-            // 回収
+            // Boss Bullets
+            bossBullets.forEach((bb, bbi) => {
+                bb.x += bb.vx; bb.y += bb.vy;
+                if(Math.hypot(player.x-bb.x, player.y-bb.y) < 20) { player.curHp -= 10; bossBullets.splice(bbi, 1); }
+                if(bb.x < 0 || bb.x > W || bb.y < 0 || bb.y > H) bossBullets.splice(bbi, 1);
+            });
+
+            // Get Gems & Take Damage
             gems.forEach((g, gi) => {
                 const d = Math.hypot(player.x-g.x, player.y-g.y);
-                if(d < player.stats.magnet) { g.x += (player.x-g.x)*0.2; g.y += (player.y-g.y)*0.2; }
-                if(d < 25) { player.exp++; scoreCoins+=15; gems.splice(gi,1); if(player.exp >= player.maxExp) levelUp(); }
+                if(d < player.stats.magnet) { g.x += (player.x-g.x)*0.25; g.y += (player.y-g.y)*0.25; }
+                if(d < 25) { player.exp++; scoreCoins+=20; gems.splice(gi, 1); if(player.exp >= player.maxExp) levelUp(); }
             });
-
-            // 被ダメージ
-            enemies.forEach(e => { if(Math.hypot(player.x-e.x, player.y-e.y) < 30) player.curHp -= 0.5; });
-            if(boss && Math.hypot(player.x-boss.x, player.y-boss.y) < boss.size) player.curHp -= 2;
+            enemies.forEach(e => { if(Math.hypot(player.x-e.x, player.y-e.y) < 25) player.curHp -= 0.6; });
+            if(boss && Math.hypot(player.x-boss.x, player.y-boss.y) < boss.size) player.curHp -= 2.5;
             
             if(player.curHp <= 0) endGame(false);
-            if(mode === 'OFFLINE' && playTime <= 0) endGame(true);
-
-            // UI更新
+            
             document.getElementById('ui-hp').innerText = "HP: " + Math.max(0, Math.floor(player.curHp/player.maxHp*100)) + "%";
             document.getElementById('exp-bar').style.width = (player.exp/player.maxExp*100) + "%";
-            document.getElementById('timer').innerText = Math.floor(playTime/60) + ":" + (playTime%60).toString().padStart(2,'0');
+            document.getElementById('timer').innerText = boss ? "BOSS BATTLE!" : (Math.floor(playTime/60) + ":" + (playTime%60).toString().padStart(2,'0'));
         }
 
-        function drawGame() {
+        function draw() {
             ctx.fillStyle = "#050510"; ctx.fillRect(0,0,W,H);
-            // 描画
+            // Draw Gems
             gems.forEach(g => { ctx.fillStyle="#0ff"; ctx.beginPath(); ctx.arc(g.x, g.y, 5, 0, 7); ctx.fill(); });
-            enemies.forEach(e => { ctx.fillStyle="#f44"; ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, 7); ctx.fill(); });
-            bullets.forEach(b => { 
-                ctx.fillStyle = b.special ? "#0f0" : "#ff0"; 
-                ctx.beginPath(); ctx.arc(b.x, b.y, b.size||6, 0, 7); ctx.fill(); 
+            // Draw Enemies with HP Bars
+            enemies.forEach(e => {
+                ctx.fillStyle="#f44"; ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, 7); ctx.fill();
+                ctx.fillStyle="#111"; ctx.fillRect(e.x-15, e.y-25, 30, 4);
+                ctx.fillStyle="#f44"; ctx.fillRect(e.x-15, e.y-25, 30*(e.hp/e.maxHp), 4);
             });
+            // Draw Bullets
+            bullets.forEach(b => { ctx.fillStyle=b.special?"#f0f":"#ff0"; ctx.beginPath(); ctx.arc(b.x, b.y, b.size||6, 0, 7); ctx.fill(); });
+            bossBullets.forEach(bb => { ctx.fillStyle="red"; ctx.beginPath(); ctx.arc(bb.x, bb.y, 8, 0, 7); ctx.fill(); });
+            // Draw Boss
             if(boss) {
-                ctx.fillStyle="red"; ctx.beginPath(); ctx.arc(boss.x, boss.y, boss.size, 0, 7); ctx.fill();
-                ctx.fillStyle="#222"; ctx.fillRect(boss.x-50, boss.y-90, 100, 10);
-                ctx.fillStyle="red"; ctx.fillRect(boss.x-50, boss.y-90, 100*(boss.hp/boss.max), 10);
+                ctx.fillStyle="#ff0044"; ctx.beginPath(); ctx.arc(boss.x, boss.y, boss.size, 0, 7); ctx.fill();
+                ctx.lineWidth=4; ctx.strokeStyle="white"; ctx.stroke();
+                ctx.fillStyle="#222"; ctx.fillRect(W*0.1, 50, W*0.8, 15);
+                ctx.fillStyle="#ff0044"; ctx.fillRect(W*0.1, 50, W*0.8*(boss.hp/boss.max), 15);
             }
-            if(partner) { 
-                ctx.fillStyle="#f0f"; ctx.beginPath(); ctx.arc(partner.x, partner.y, 20, 0, 7); ctx.fill(); 
-                ctx.fillStyle="white"; ctx.fillText("Partner", partner.x-20, partner.y-30);
-            }
+            // Draw Orbit
             if(player.stats.orbit > 0) {
                 for(let i=0; i<player.stats.orbit; i++) {
-                    const a = (frame*0.05) + (i * Math.PI*2 / player.stats.orbit);
-                    ctx.fillStyle="#00ffcc"; ctx.beginPath(); ctx.arc(player.x + Math.cos(a)*80, player.y + Math.sin(a)*80, 10, 0, 7); ctx.fill();
+                    const a = frame*0.07 + i*(Math.PI*2/player.stats.orbit);
+                    const ox = player.x+Math.cos(a)*90, oy = player.y+Math.sin(a)*90;
+                    ctx.fillStyle="#00ffcc"; ctx.beginPath(); ctx.arc(ox, oy, 10, 0, 7); ctx.fill();
+                    enemies.forEach(e => { if(Math.hypot(e.x-ox, e.y-oy)<30) e.hp -= 1.5; });
                 }
             }
+            // Draw Players
+            if(partner) { ctx.fillStyle="#f0f"; ctx.beginPath(); ctx.arc(partner.x, partner.y, 20, 0, 7); ctx.fill(); }
             ctx.fillStyle = player.color; ctx.beginPath(); ctx.arc(player.x, player.y, 22, 0, 7); ctx.fill();
-            ctx.strokeStyle = "white"; ctx.lineWidth=2; ctx.stroke();
+            ctx.strokeStyle="white"; ctx.lineWidth=2; ctx.stroke();
         }
 
         function levelUp() {
-            state = 'LEVELUP';
-            player.exp = 0; player.maxExp = Math.floor(player.maxExp * 1.3);
-            const container = document.getElementById('skill-container'); container.innerHTML = "";
-            const skills = [...SKILL_POOL].sort(()=>0.5-Math.random()).slice(0, 3);
-            skills.forEach(s => {
-                const div = document.createElement('div'); div.className = 'skill-card';
-                div.innerHTML = `<h3>${s.name}</h3><p>${s.desc}</p>`;
-                div.onclick = () => {
+            state = 'LEVELUP'; player.exp = 0; player.maxExp = Math.floor(player.maxExp * 1.3);
+            const c = document.getElementById('skill-container'); c.innerHTML = "";
+            [...SKILLS].sort(()=>0.5-Math.random()).slice(0,3).forEach(s => {
+                const d = document.createElement('div'); d.className = 'skill-card'; d.innerHTML = `<h3>${s.name}</h3><p>${s.desc}</p>`;
+                d.onclick = () => {
                     if(s.id==='multi') player.stats.multi++; if(s.id==='power') player.stats.power+=15;
-                    if(s.id==='orbit') player.stats.orbit++; if(s.id==='magnet') player.stats.magnet+=100;
-                    if(s.id==='speed') player.stats.speed+=0.6; if(s.id==='heal') player.curHp = player.maxHp;
+                    if(s.id==='orbit') player.stats.orbit++; if(s.id==='magnet') player.stats.magnet+=70;
+                    if(s.id==='speed') player.stats.speed+=0.8; if(s.id==='heal') player.curHp = player.maxHp;
                     state = 'PLAYING'; document.getElementById('screen-levelup').classList.add('hidden');
                 };
-                container.appendChild(div);
+                c.appendChild(d);
             });
             document.getElementById('screen-levelup').classList.remove('hidden');
         }
 
         async function endGame(win) {
-            state = 'RESULT';
-            showScreen('screen-result');
-            document.getElementById('res-title').innerText = win ? "STAGE CLEAR!!" : "GAME OVER";
+            state = 'RESULT'; showScreen('screen-result');
+            document.getElementById('res-title').innerText = win ? "STAGE CLEAR!" : "MISSION FAILED";
             document.getElementById('res-coins').innerText = scoreCoins;
             saveData.coins += scoreCoins;
-            if(win && mode === 'OFFLINE' && saveData.currentStage === saveData.unlockedStage) {
+            if(win && mode==='OFFLINE' && saveData.currentStage === saveData.unlockedStage) {
                 if(saveData.unlockedStage < 30) saveData.unlockedStage++;
             }
-            
-            // 覚醒ロジック (レイド勝利時のみ)
-            if(win && mode === 'RAID' && !saveData.awakened.includes(player.id)) {
+            if(win && !saveData.awakened.includes(player.id)) {
                 document.getElementById('awaken-ui').classList.remove('hidden');
                 document.getElementById('btn-awaken').onclick = async () => {
-                    if(saveData.coins < 30000) return alert("コインが足りません(30000C必要)");
+                    if(saveData.coins < 30000) return alert("コイン不足");
                     saveData.coins -= 30000; saveData.awakened.push(player.id);
-                    await saveToCloud(); alert("キャラクターが覚醒しました！");
-                    document.getElementById('awaken-ui').classList.add('hidden');
-                    openHome();
+                    await syncCloud(); alert("CHARACTER AWAKENED!"); openHome();
                 };
-            } else { document.getElementById('awaken-ui').classList.add('hidden'); }
-            
-            await saveToCloud();
-            if(isHost) remove(ref(db, 'rooms/'+rid));
+            } else document.getElementById('awaken-ui').classList.add('hidden');
+            await syncCloud();
         }
 
         function showScreen(id) {
             document.querySelectorAll('.overlay').forEach(s => s.classList.add('hidden'));
-            if(id !== 'none') document.getElementById(id).classList.remove('hidden');
+            if(id!=='none') document.getElementById(id).classList.remove('hidden');
         }
-
         document.getElementById('btn-back-home').onclick = openHome;
         window.onmousemove = e => { targetPos.x = e.clientX; targetPos.y = e.clientY; };
-        window.ontouchstart = e => { targetPos.x = e.touches[0].clientX; targetPos.y = e.touches[0].clientY; };
         window.ontouchmove = e => { targetPos.x = e.touches[0].clientX; targetPos.y = e.touches[0].clientY; e.preventDefault(); };
     </script>
 </body>
