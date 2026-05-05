@@ -3,130 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>JS SURVIVOR - FULL ONLINE</title>
+    <title>JS SURVIVOR - FINAL ONLINE</title>
     <style>
-        body { margin:0; overflow:hidden; background:#050510; font-family:sans-serif; touch-action:none; color:white; user-select:none; }
+        body { margin:0; overflow:hidden; background:#050510; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action:none; color:white; user-select:none; }
         canvas { display:block; }
-        .overlay { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:rgba(0,0,0,0.9); z-index:20; }
+        .overlay { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; background:rgba(0,0,0,0.85); z-index:20; backdrop-filter: blur(5px); }
         .hidden { display:none !important; }
-        h1 { font-size:40px; color:#ffcc00; text-shadow:0 0 20px #ffcc00; text-align:center; }
-        button, select, input { font-size:18px; padding:12px 24px; margin:8px; border-radius:8px; background:#1a1a2e; color:white; border:2px solid #444; cursor:pointer; }
-        button:hover { border-color:#00ffcc; background:#2a2a4e; }
+        h1 { font-size:45px; color:#00ffcc; text-shadow:0 0 15px #00ffcc; margin-bottom:10px; letter-spacing: 2px;}
+        button, input { font-size:18px; padding:12px 24px; margin:8px; border-radius:8px; background:#1a1a2e; color:white; border:2px solid #444; cursor:pointer; font-weight:bold; transition: 0.2s;}
+        button:hover { border-color:#00ffcc; background:#2a2a4e; box-shadow: 0 0 10px #00ffcc;}
         
-        #ui-layer { position:absolute; top:0; left:0; width:100%; padding:10px; box-sizing:border-box; pointer-events:none; z-index:10; }
-        .stats { display:flex; justify-content:space-between; font-size:18px; font-weight:bold; }
-        #exp-bg { width:100%; height:8px; background:#222; border-radius:4px; margin-top:8px; border:1px solid #333; }
-        #exp-bar { width:0%; height:100%; background:#00ffcc; transition:width 0.1s; }
+        /* UI Layer */
+        #ui-layer { position:absolute; top:0; left:0; width:100%; padding:15px; box-sizing:border-box; pointer-events:none; z-index:10; }
+        .stats { display:flex; justify-content:space-between; font-size:20px; font-weight:bold; text-shadow: 1px 1px 2px black;}
+        #exp-bg { width:100%; height:10px; background:#222; border-radius:5px; margin-top:10px; border:1px solid #555; overflow:hidden;}
+        #exp-bar { width:0%; height:100%; background:linear-gradient(90deg, #00ffcc, #0088ff); transition:width 0.2s ease-out; }
         
-        .char-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; max-height:50vh; overflow-y:auto; padding:10px; }
-        .char-box { border:2px solid #555; border-radius:8px; padding:10px; text-align:center; cursor:pointer; background:#111; font-size:12px;}
+        /* Character Menu */
+        .char-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; max-height:50vh; overflow-y:auto; padding:15px; background:rgba(0,0,0,0.5); border-radius:10px;}
+        .char-box { border:2px solid #555; border-radius:8px; padding:10px; text-align:center; cursor:pointer; background:#111; font-size:14px; position:relative;}
         .char-box.owned { border-color:#00ffcc; }
-        .char-box.selected { background:#00ffcc; color:black; font-weight:bold; }
-        .char-box.awakened { box-shadow: 0 0 15px #ff00ff; border-color:#ff00ff;}
+        .char-box.selected { background:#00ffcc; color:black; border-color:white; box-shadow: 0 0 15px #00ffcc;}
+        .char-box.awakened::after { content:'★'; color:#ff00ff; position:absolute; top:-5px; right:-5px; font-size:20px; text-shadow:0 0 5px #ff00ff;}
         
-        .skill-card { background:#222; border:2px solid #444; border-radius:10px; padding:15px; margin:5px; width:250px; text-align:center; cursor:pointer; pointer-events:auto; }
-        .skill-card:hover { border-color:#00ffcc; }
-        #boss-notice { position:absolute; top:20%; width:100%; text-align:center; font-size:40px; color:red; font-weight:bold; display:none; z-index:30; }
+        /* Level Up Skills */
+        .skill-card { background:#222; border:2px solid #444; border-radius:10px; padding:20px; margin:10px; width:280px; text-align:center; cursor:pointer; pointer-events:auto; transition:0.2s;}
+        .skill-card:hover { border-color:#ffcc00; transform:scale(1.05); }
+        .skill-title { font-size: 22px; color: #ffcc00; margin-bottom: 5px;}
+        
+        #boss-notice { position:absolute; top:20%; width:100%; text-align:center; font-size:50px; color:#ff0044; font-weight:bold; text-shadow:0 0 20px #ff0044; display:none; z-index:30; animation: blink 1s infinite;}
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
     <div id="screen-login" class="overlay">
         <h1>JS SURVIVOR</h1>
-        <input type="text" id="player-name-input" placeholder="名前" maxlength="10">
-        <button id="btn-login">ゲーム開始</button>
+        <p>AWAKENING ONLINE</p>
+        <input type="text" id="player-name-input" placeholder="プレイヤー名を入力" maxlength="10">
+        <button id="btn-login" style="background:#00aaff; border-color:white;">ゲームスタート</button>
     </div>
 
     <div id="screen-home" class="overlay hidden">
-        <h1 id="disp-name"></h1>
-        <p>所持コイン: <span id="disp-coins" style="color:#ffcc00;">0</span> C</p>
-        <div style="border:2px solid #ff00ff; padding:15px; border-radius:10px; text-align:center;">
-            <h3>RAID MODE (Online)</h3>
-            <input type="text" id="raid-pass" value="7777" style="width:120px;">
-            <button id="btn-raid-start" style="background:#ff00ff;">レイド共闘出撃</button>
+        <h2 id="disp-name"></h2>
+        <p style="font-size:24px;">💰 <span id="disp-coins" style="color:#ffcc00;">0</span> C</p>
+        
+        <div style="border:2px solid #ff00ff; padding:20px; border-radius:10px; text-align:center; margin:20px; background:rgba(255,0,255,0.1);">
+            <h3 style="color:#ff00ff; margin-top:0;">🌐 レイド共闘モード</h3>
+            <input type="text" id="room-pass" value="ROOM777" style="width:150px; text-align:center;">
+            <button id="btn-raid-start" style="background:#ff00ff; border-color:white; color:white;">ルームへ出撃</button>
         </div>
-        <div style="margin-top:20px;">
-            <button id="btn-gacha-menu">ガチャ</button>
-            <button id="btn-char-menu">キャラ変更</button>
+        
+        <div style="display:flex; gap:10px;">
+            <button id="btn-gacha-menu">ガチャ (1000C)</button>
+            <button id="btn-char-menu">キャラクター編成</button>
         </div>
     </div>
 
     <div id="screen-chars" class="overlay hidden">
-        <h2>キャラクター選択</h2>
+        <h2 style="color:#00ffcc;">CHARACTER SELECT</h2>
         <div id="char-list" class="char-grid"></div>
-        <button id="btn-close-chars">戻る</button>
+        <button id="btn-close-chars" style="margin-top:20px;">決定</button>
     </div>
 
-    <div id="screen-levelup" class="overlay hidden">
-        <h2>LEVEL UP!</h2>
-        <div id="skill-container"></div>
+    <div id="screen-levelup" class="overlay hidden" style="background:rgba(0,0,0,0.7);">
+        <h2 style="color:#ffcc00; font-size:40px;">LEVEL UP!</h2>
+        <p>※スキル選択中は無敵です</p>
+        <div id="skill-container" style="display:flex; flex-wrap:wrap; justify-content:center;"></div>
     </div>
 
     <div id="screen-result" class="overlay hidden">
-        <h1 id="res-title">FINISH</h1>
-        <p>獲得コイン: <span id="res-coins">0</span> C</p>
-        <div id="awaken-section" class="hidden" style="border:2px solid #f0f; padding:15px; margin-bottom:10px;">
-            <h3 style="color:#f0f;">覚醒の時が来た</h3>
-            <button id="btn-awaken" style="background:#f0f;">30000Cで覚醒する</button>
+        <h1 id="res-title">MISSION COMPLETE</h1>
+        <p style="font-size:24px;">獲得コイン: <span id="res-coins" style="color:#ffcc00;">0</span> C</p>
+        
+        <div id="awaken-section" class="hidden" style="border:2px solid #f0f; padding:20px; margin-bottom:20px; border-radius:10px; background:rgba(255,0,255,0.1);">
+            <h3 style="color:#f0f; margin:0 0 10px 0;">✨ 覚醒可能 ✨</h3>
+            <p style="margin:0 0 15px 0;">30000Cを消費して真の力を解放しますか？</p>
+            <button id="btn-awaken" style="background:#f0f; width:100%;">覚醒する</button>
         </div>
-        <button id="btn-back-home">HOMEへ</button>
+        
+        <button id="btn-back-home" style="background:#444;">HOMEへ戻る</button>
     </div>
 
     <div id="ui-layer" class="hidden">
         <div class="stats">
-            <div>Lv.<span id="ui-level">1</span></div>
-            <div id="timer">05:00</div>
-            <div id="ui-p2-name" style="color:#f0f;">P2: Waiting...</div>
+            <div>Lv.<span id="ui-level" style="color:#00ffcc;">1</span></div>
+            <div id="timer">03:00</div>
+            <div id="ui-p2-name" style="color:#ff00ff;">P2: 待機中...</div>
         </div>
         <div id="exp-bg"><div id="exp-bar"></div></div>
     </div>
 
-    <div id="boss-notice">WARNING: RAID BOSS</div>
+    <div id="boss-notice">WARNING: RAID BOSS DETECTED</div>
     <canvas id="gameCanvas"></canvas>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, update, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Firebase設定（ここを自身のものに書き換えてください）
-        const firebaseConfig = { databaseURL: "https://あなたのプロジェクトID.firebaseio.com" };
+        // Firebase構成（あなたのURL）
+        const firebaseConfig = { databaseURL: "https://game-2d503-default-rtdb.firebaseio.com" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- データ定義 ---
+        // --- 全20キャラデータ ---
         const CHAR_DATA = [
-            { id: 0, name: "ルーキー", color: "#09f", hp: 100, spd: 4.0, atk: 15, awkT: 1, awkN: "ブレイブキャノン" },
-            { id: 1, name: "ニンジャ", color: "#333", hp: 60, spd: 5.5, atk: 10, awkT: 5, awkN: "分身手裏剣の術" },
-            { id: 2, name: "タンク", color: "#8b4513", hp: 250, spd: 2.5, atk: 20, awkT: 2, awkN: "アースクエイク" },
-            { id: 3, name: "スナイパ", color: "#0f0", hp: 80, spd: 3.5, atk: 40, awkT: 4, awkN: "ピアシングスナイプ" },
-            { id: 4, name: "マグネ", color: "#f0f", hp: 100, spd: 3.8, atk: 12, awkT: 3, awkN: "グラビティボム" },
-            { id: 5, name: "パラディン", color: "#ffd700", hp: 150, spd: 3.0, atk: 15, awkT: 2, awkN: "ホーリーノヴァ" },
-            { id: 6, name: "ガンナー", color: "#ff4500", hp: 90, spd: 4.0, atk: 8, awkT: 5, awkN: "ガトリング乱射" },
-            { id: 7, name: "ヴァンピィ", color: "#800080", hp: 100, spd: 4.2, atk: 15, awkT: 3, awkN: "ブラッドチェイサー" },
-            { id: 8, name: "サイボーグ", color: "#708090", hp: 180, spd: 3.2, atk: 25, awkT: 4, awkN: "プラズマバスター" },
-            { id: 9, name: "エスパー", color: "#00ffff", hp: 70, spd: 4.5, atk: 10, awkT: 3, awkN: "サイコキネシス" },
-            { id: 10, name: "バーサーカ", color: "#b22222", hp: 120, spd: 4.5, atk: 35, awkT: 1, awkN: "グランドスマッシュ" },
-            { id: 11, name: "ゴースト", color: "#e6e6fa", hp: 50, spd: 5.0, atk: 12, awkT: 2, awkN: "ソウルバースト" },
-            { id: 12, name: "サムライ", color: "#cd5c5c", hp: 110, spd: 4.2, atk: 28, awkT: 5, awkN: "百花繚乱の太刀" },
-            { id: 13, name: "リッチ", color: "#483d8b", hp: 80, spd: 3.8, atk: 20, awkT: 2, awkN: "メテオストライク" },
-            { id: 14, name: "ギャンブラ", color: "#ff1493", hp: 100, spd: 4.0, atk: 5, awkT: 5, awkN: "コインバラマキ" },
-            { id: 15, name: "ドクター", color: "#ffffff", hp: 120, spd: 3.5, atk: 10, awkT: 3, awkN: "ケミカルポーション" },
-            { id: 16, name: "アーチャー", color: "#228b22", hp: 90, spd: 4.3, atk: 22, awkT: 5, awkN: "アローレイン" },
-            { id: 17, name: "エイリアン", color: "#7fff00", hp: 100, spd: 4.8, atk: 18, awkT: 4, awkN: "アブダクション光線" },
-            { id: 18, name: "ドラゴン", color: "#dc143c", hp: 200, spd: 3.8, atk: 30, awkT: 1, awkN: "メガファイアボール" },
-            { id: 19, name: "カミサマ", color: "#ffea00", hp: 999, spd: 6.0, atk: 99, awkT: 2, awkN: "天罰(ゴッドフレア)" }
+            { id: 0, name: "ルーキー", color: "#09f", hp: 100, spd: 4.0, atk: 15, awkT: 1 },
+            { id: 1, name: "ニンジャ", color: "#555", hp: 60, spd: 5.5, atk: 10, awkT: 5 },
+            { id: 2, name: "タンク", color: "#8b4513", hp: 250, spd: 2.5, atk: 20, awkT: 2 },
+            { id: 3, name: "スナイパ", color: "#0f0", hp: 80, spd: 3.5, atk: 40, awkT: 4 },
+            { id: 4, name: "マグネ", color: "#f0f", hp: 100, spd: 3.8, atk: 12, awkT: 3 },
+            { id: 5, name: "パラディン", color: "#ffd700", hp: 150, spd: 3.0, atk: 15, awkT: 2 },
+            { id: 6, name: "ガンナー", color: "#ff4500", hp: 90, spd: 4.0, atk: 8, awkT: 5 },
+            { id: 7, name: "ヴァンピィ", color: "#800080", hp: 100, spd: 4.2, atk: 15, awkT: 3 },
+            { id: 8, name: "サイボーグ", color: "#708090", hp: 180, spd: 3.2, atk: 25, awkT: 4 },
+            { id: 9, name: "エスパー", color: "#00ffff", hp: 70, spd: 4.5, atk: 10, awkT: 3 },
+            { id: 10, name: "バーサーカ", color: "#b22222", hp: 120, spd: 4.5, atk: 35, awkT: 1 },
+            { id: 11, name: "ゴースト", color: "#e6e6fa", hp: 50, spd: 5.0, atk: 12, awkT: 2 },
+            { id: 12, name: "サムライ", color: "#cd5c5c", hp: 110, spd: 4.2, atk: 28, awkT: 5 },
+            { id: 13, name: "リッチ", color: "#483d8b", hp: 80, spd: 3.8, atk: 20, awkT: 2 },
+            { id: 14, name: "ギャンブラ", color: "#ff1493", hp: 100, spd: 4.0, atk: 5, awkT: 5 },
+            { id: 15, name: "ドクター", color: "#ffffff", hp: 120, spd: 3.5, atk: 10, awkT: 3 },
+            { id: 16, name: "アーチャー", color: "#228b22", hp: 90, spd: 4.3, atk: 22, awkT: 5 },
+            { id: 17, name: "エイリアン", color: "#7fff00", hp: 100, spd: 4.8, atk: 18, awkT: 4 },
+            { id: 18, name: "ドラゴン", color: "#dc143c", hp: 200, spd: 3.8, atk: 30, awkT: 1 },
+            { id: 19, name: "カミサマ", color: "#ffea00", hp: 999, spd: 6.0, atk: 99, awkT: 2 }
         ];
 
         const skillPool = [
-            { id: 'multi', name: '連射', desc: '弾数+1' }, { id: 'power', name: '威力', desc: 'ダメージUP' },
-            { id: 'orbit', name: 'バリア', desc: '周囲を回る石' }, { id: 'magnet', name: '磁石', desc: '回収範囲UP' },
-            { id: 'speed', name: '加速', desc: '移動速度UP' }, { id: 'heal', name: '回復', desc: 'HPを50%回復' }
+            { id: 'multi', name: '連射アップ', desc: '発射する弾数が1増加する' }, 
+            { id: 'power', name: '威力アップ', desc: '弾のダメージが10増加する' },
+            { id: 'orbit', name: 'バリアオーブ', desc: '周囲を回転する防壁を生成' }, 
+            { id: 'magnet', name: '磁力アップ', desc: 'ジェムの回収範囲が拡大する' },
+            { id: 'speed', name: 'スピードアップ', desc: '移動速度が上昇する' }, 
+            { id: 'heal', name: 'フルヒール', desc: 'HPを最大まで回復する' }
         ];
 
-        let saveData = { name: "", coins: 5000, chars: [0], selectedChar: 0, awakened: [] };
-        let state = 'LOGIN', playTime = 300, frame = 0, roomId = "", scoreCoins = 0;
-        let player, partner = null, enemies = [], bullets = [], gems = [], orbits = [];
-        let targetPos = { x: 0, y: 0 }, isHost = false;
+        // --- セーブデータ管理 ---
+        const SAVE_KEY = "js_survivor_save_data";
+        let saveData = JSON.parse(localStorage.getItem(SAVE_KEY)) || { name: "", coins: 5000, chars: [0], selectedChar: 0, awakened: [] };
+        function saveGame() { localStorage.setItem(SAVE_KEY, JSON.stringify(saveData)); }
+
+        // --- ゲームステート ---
+        let state = 'LOGIN', roomId = "", isHost = false;
+        let playTime = 180, frame = 0, scoreCoins = 0;
+        let player = null, partner = null, boss = null;
+        let enemies = [], bullets = [], gems = [], orbits = [];
+        let targetPos = { x: window.innerWidth/2, y: window.innerHeight/2 };
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -134,29 +157,34 @@
         function resize() { W = window.innerWidth; H = window.innerHeight; canvas.width = W; canvas.height = H; }
         window.addEventListener('resize', resize); resize();
 
-        // --- システムロジック ---
+        // --- UI制御 ---
+        if(saveData.name) { document.getElementById('player-name-input').value = saveData.name; }
+
         document.getElementById('btn-login').onclick = () => {
             const n = document.getElementById('player-name-input').value.trim();
-            if(!n) return; saveData.name = n; openHome();
+            if(!n) return alert("名前を入力してください");
+            saveData.name = n; saveGame(); openHome();
         };
 
         function openHome() {
             state = 'HOME';
-            document.getElementById('disp-name').innerText = saveData.name;
+            document.getElementById('disp-name').innerText = "PLAYER: " + saveData.name;
             document.getElementById('disp-coins').innerText = saveData.coins;
             showScreen('screen-home');
         }
 
+        // キャラクター画面
         document.getElementById('btn-char-menu').onclick = () => {
             showScreen('screen-chars');
             const list = document.getElementById('char-list'); list.innerHTML = "";
             CHAR_DATA.forEach(c => {
                 const owned = saveData.chars.includes(c.id);
                 const awake = saveData.awakened.includes(c.id);
+                const isSel = saveData.selectedChar === c.id;
                 const div = document.createElement('div');
-                div.className = `char-box ${owned?'owned':''} ${saveData.selectedChar===c.id?'selected':''} ${awake?'awakened':''}`;
-                div.innerHTML = `<b>${owned?c.name:'???'}</b>${awake?'<br>★':''}`;
-                if(owned) div.onclick = () => { saveData.selectedChar = c.id; openHome(); };
+                div.className = `char-box ${owned?'owned':''} ${isSel?'selected':''} ${awake?'awakened':''}`;
+                div.innerHTML = `<div style="font-size:24px; color:${c.color};">●</div><b>${owned?c.name:'???'}</b>`;
+                if(owned) div.onclick = () => { saveData.selectedChar = c.id; saveGame(); openHome(); };
                 list.appendChild(div);
             });
         };
@@ -164,31 +192,49 @@
 
         // ガチャ
         document.getElementById('btn-gacha-menu').onclick = () => {
-            if(saveData.coins < 1000) return alert("コイン不足");
+            if(saveData.coins < 1000) return alert("コインが足りません");
             saveData.coins -= 1000;
-            const id = Math.random() < 0.02 ? 19 : Math.floor(Math.random() * 19);
+            const id = Math.random() < 0.05 ? 19 : Math.floor(Math.random() * 19);
             if(!saveData.chars.includes(id)) {
-                saveData.chars.push(id); alert("NEW! " + CHAR_DATA[id].name);
+                saveData.chars.push(id); alert("🎉 NEW キャラクター\n「" + CHAR_DATA[id].name + "」を獲得！");
             } else {
-                saveData.coins += 300; alert("重複(300C還元): " + CHAR_DATA[id].name);
+                saveData.coins += 300; alert("重複しました（300C還元）: " + CHAR_DATA[id].name);
             }
-            openHome();
+            saveGame(); openHome();
         };
 
         // --- オンラインマルチ開始 ---
-        document.getElementById('btn-raid-start').onclick = async () => {
-            roomId = document.getElementById('raid-pass').value;
+        document.getElementById('btn-raid-start').onclick = () => {
+            roomId = document.getElementById('room-pass').value.trim();
+            if(!roomId) return;
+            
             const roomRef = ref(db, 'rooms/' + roomId);
+            
             onValue(roomRef, (snap) => {
                 const data = snap.val();
                 if (!data) {
                     isHost = true;
-                    set(roomRef, { host: saveData.name, status: 'waiting', p1: { x: W/2, y: H/2, hp: 100 }, enemies: [] });
+                    set(roomRef, { host: saveData.name, status: 'playing', p1: { x: W/2, y: H/2, name: saveData.name, charId: saveData.selectedChar } });
                     onDisconnect(roomRef).remove();
-                } else if (data.status === 'waiting' && data.host !== saveData.name) {
-                    isHost = false;
-                    update(roomRef, { guest: saveData.name, status: 'playing', p2: { x: W/2, y: H/2, hp: 100 } });
-                } else if (data.status === 'playing' && state !== 'PLAYING') initGame();
+                } else {
+                    if (data.host !== saveData.name) {
+                        isHost = false;
+                        update(roomRef, { p2: { x: W/2, y: H/2, name: saveData.name, charId: saveData.selectedChar } });
+                        onDisconnect(ref(db, `rooms/${roomId}/p2`)).remove();
+                    }
+                }
+                
+                // パートナー情報の取得
+                partner = isHost ? data?.p2 : data?.p1;
+                if(partner) {
+                    document.getElementById('ui-p2-name').innerText = "P2: " + partner.name;
+                    partner.color = CHAR_DATA[partner.charId || 0].color;
+                }
+
+                // ボス情報の同期（ゲスト用）
+                if(!isHost && data?.boss) boss = data.boss;
+
+                if (state !== 'PLAYING' && state !== 'LEVELUP') initGame();
             });
         };
 
@@ -196,163 +242,237 @@
             state = 'PLAYING';
             showScreen('none');
             document.getElementById('ui-layer').classList.remove('hidden');
+            
             const c = CHAR_DATA.find(d => d.id === saveData.selectedChar);
-            player = { ...c, x: W/2, y: H/2, level: 1, exp: 0, maxExp: 5, maxHp: c.hp, 
-                       stats: { multi: 1, power: c.atk, speed: c.spd, orbit: 0, magnet: 120 } };
-            enemies = []; bullets = []; gems = []; orbits = []; playTime = 300; frame = 0; scoreCoins = 0;
+            player = { ...c, x: W/2, y: H/2, level: 1, exp: 0, maxExp: 5, maxHp: c.hp, curHp: c.hp, 
+                       stats: { multi: 1, power: c.atk, speed: c.spd, orbit: 0, magnet: 150 } };
+            
+            enemies = []; bullets = []; gems = []; orbits = []; boss = null;
+            playTime = 180; frame = 0; scoreCoins = 0;
             requestAnimationFrame(gameLoop);
         }
 
         function gameLoop() {
-            if (state !== 'PLAYING') return;
-            update(); draw();
-            requestAnimationFrame(gameLoop);
+            if (state === 'PLAYING') updateGame();
+            if (state === 'PLAYING' || state === 'LEVELUP') drawGame();
+            if (state !== 'RESULT') requestAnimationFrame(gameLoop);
         }
 
-        function update() {
+        function updateGame() {
             frame++;
-            if (frame % 60 === 0) playTime--;
+            if (frame % 60 === 0) {
+                playTime--;
+                // ホストがボスの出現と時間を管理
+                if(isHost) {
+                    if(playTime === 120 && !boss) {
+                        boss = { x: W/2, y: -100, hp: 50000, max: 50000, size: 60 };
+                        document.getElementById('boss-notice').style.display = 'block';
+                        setTimeout(()=> document.getElementById('boss-notice').style.display='none', 3000);
+                    }
+                    update(ref(db, `rooms/${roomId}`), { time: playTime, boss: boss });
+                }
+            }
 
-            // 移動
+            // プレイヤー移動
             player.x += (targetPos.x - player.x) * 0.1 * (player.stats.speed/4);
             player.y += (targetPos.y - player.y) * 0.1 * (player.stats.speed/4);
 
-            // 同期
-            const path = isHost ? 'p1' : 'p2';
-            update(ref(db, `rooms/${roomId}/${path}`), { x: Math.floor(player.x), y: Math.floor(player.y), hp: player.hp, name: saveData.name });
-
-            if (isHost) {
-                if (frame % 60 === 0) enemies.push({ id: Date.now(), x: Math.random()*W, y: -20, hp: 10, type: 'mob', speed: 2 });
-                if (frame === 600) enemies.push({ id: 'boss', x: W/2, y: -100, hp: 50000, max: 50000, type: 'boss', speed: 0.5 });
-                
-                enemies.forEach(e => {
-                    const target = player;
-                    const ang = Math.atan2(target.y - e.y, target.x - e.x);
-                    e.x += Math.cos(ang) * e.speed; e.y += Math.sin(ang) * e.speed;
-                    e.invincible = (e.type === 'boss' && playTime > 180);
-                });
-                update(ref(db, `rooms/${roomId}`), { enemies: enemies, time: playTime });
+            // 座標送信（負荷軽減のため4フレームに1回）
+            if(frame % 4 === 0) {
+                const path = isHost ? 'p1' : 'p2';
+                update(ref(db, `rooms/${roomId}/${path}`), { x: Math.floor(player.x), y: Math.floor(player.y) });
             }
 
-            onValue(ref(db, `rooms/${roomId}`), (snap) => {
-                const data = snap.val(); if(!data) return;
-                partner = isHost ? data.p2 : data.p1;
-                if(partner) document.getElementById('ui-p2-name').innerText = "P2: " + (partner.name || "Joining");
-                if(!isHost) { enemies = data.enemies || []; playTime = data.time; }
-            }, { onlyOnce: true });
+            // ローカル雑魚敵生成
+            if (frame % 30 === 0) {
+                enemies.push({ x: Math.random()*W, y: -20, hp: 10 + player.level*2, speed: 1.5 + Math.random(), size: 15 });
+            }
 
-            // 攻撃
-            if (frame % 20 === 0 && enemies.length > 0) {
+            // 敵の移動
+            enemies.forEach(e => {
+                const ang = Math.atan2(player.y - e.y, player.x - e.x);
+                e.x += Math.cos(ang) * e.speed; e.y += Math.sin(ang) * e.speed;
+            });
+
+            // ボスの移動（ホスト基準で同期）
+            if(boss) {
+                const target = isHost ? player : (partner || player);
+                const ang = Math.atan2(target.y - boss.y, target.x - boss.x);
+                boss.x += Math.cos(ang) * 0.8; boss.y += Math.sin(ang) * 0.8;
+                if(isHost && frame % 10 === 0) update(ref(db, `rooms/${roomId}/boss`), { x: boss.x, y: boss.y, hp: boss.hp });
+            }
+
+            // 射撃（自動）
+            if (frame % 20 === 0 && (enemies.length > 0 || boss)) {
                 for(let i=0; i<player.stats.multi; i++) {
-                    bullets.push({ x: player.x, y: player.y, vx: (i-player.stats.multi/2)*2, vy: -12, dmg: player.stats.power, color: "#ff0" });
+                    bullets.push({ x: player.x, y: player.y, vx: (i - (player.stats.multi-1)/2)*2, vy: -15, dmg: player.stats.power, color: "#ffcc00" });
                 }
                 if(saveData.awakened.includes(player.id)) fireAwakeSkill(player.x, player.y, player.awkT, player.stats.power);
             }
 
-            // バリア
+            // バリアの計算
             orbits = [];
             for(let i=0; i<player.stats.orbit; i++) {
                 const a = (frame*0.1) + (i * Math.PI*2/player.stats.orbit);
                 orbits.push({ x: player.x + Math.cos(a)*80, y: player.y + Math.sin(a)*80 });
             }
 
-            // 判定
-            bullets.forEach((b, i) => {
+            // 当たり判定
+            bullets.forEach((b, bi) => {
                 b.x += b.vx || 0; b.y += b.vy;
-                enemies.forEach(e => {
-                    if(Math.hypot(e.x-b.x, e.y-b.y) < 30) {
-                        e.hp -= e.invincible ? 1 : b.dmg;
-                        if(!b.pierce) bullets.splice(i, 1);
-                        if(e.hp <= 0 && isHost) {
-                            gems.push({ x: e.x, y: e.y, val: e.type==='boss'?100:1 });
-                            enemies = enemies.filter(en => en.id !== e.id);
+                let hit = false;
+
+                // ボス判定
+                if(boss && Math.hypot(boss.x-b.x, boss.y-b.y) < boss.size) {
+                    boss.hp -= b.dmg; hit = true;
+                    if(boss.hp <= 0 && isHost) endLevel(true); // ホストが討伐判定
+                }
+
+                // 雑魚判定
+                enemies.forEach((e, ei) => {
+                    if(!hit && Math.hypot(e.x-b.x, e.y-b.y) < e.size) {
+                        e.hp -= b.dmg; hit = true;
+                        if(e.hp <= 0) {
+                            gems.push({ x: e.x, y: e.y, val: 1 });
+                            enemies.splice(ei, 1);
                         }
                     }
                 });
+
+                if(hit && !b.pierce) bullets.splice(bi, 1);
             });
 
+            // ジェム回収
             gems.forEach((g, i) => {
                 const d = Math.hypot(player.x-g.x, player.y-g.y);
                 if(d < player.stats.magnet) { g.x += (player.x-g.x)*0.2; g.y += (player.y-g.y)*0.2; }
                 if(d < 20) {
-                    player.exp += g.val; scoreCoins += g.val*10; gems.splice(i, 1);
+                    player.exp += g.val; scoreCoins += 10; gems.splice(i, 1);
                     if(player.exp >= player.maxExp) triggerLevelUp();
                 }
             });
 
+            // UI更新
             document.getElementById('exp-bar').style.width = (player.exp/player.maxExp*100) + "%";
-            document.getElementById('timer').innerText = playTime;
-            if (playTime <= 0 || (isHost && enemies.length === 0 && frame > 700)) endLevel();
+            document.getElementById('timer').innerText = Math.floor(playTime/60) + ":" + (playTime%60).toString().padStart(2, '0');
+            
+            // プレイヤー被弾
+            enemies.forEach(e => {
+                if(Math.hypot(player.x-e.x, player.y-e.y) < 20) {
+                    player.curHp -= 1;
+                    if(player.curHp <= 0) endLevel(false);
+                }
+            });
+            if(boss && Math.hypot(player.x-boss.x, player.y-boss.y) < boss.size) {
+                player.curHp -= 5; if(player.curHp <= 0) endLevel(false);
+            }
+
+            if (playTime <= 0) endLevel(false);
         }
 
         function fireAwakeSkill(x, y, type, dmg) {
-            const color = "#f0f";
-            if(type === 1) bullets.push({x, y, vx:0, vy:-15, dmg:dmg*5, pierce:true, size:30, color});
-            if(type === 2) {
-                for(let i=0; i<12; i++) {
-                    const a = (Math.PI*2/12)*i;
-                    bullets.push({x, y, vx:Math.cos(a)*8, vy:Math.sin(a)*8, dmg:dmg*2, color});
-                }
+            const color = "#ff00ff";
+            if(type === 1) bullets.push({x, y, vx:0, vy:-20, dmg:dmg*5, pierce:true, size:30, color});
+            if(type === 2) { 
+                for(let i=0; i<12; i++) bullets.push({x, y, vx:Math.cos((Math.PI*2/12)*i)*8, vy:Math.sin((Math.PI*2/12)*i)*8, dmg:dmg*2, pierce:true, color});
             }
+            if(type === 3) bullets.push({x, y, vx: (Math.random()-0.5)*15, vy:-10, dmg:dmg*4, color});
+            if(type === 4) bullets.push({x, y, vx:0, vy:-30, dmg:dmg*10, pierce:true, size:10, color});
             if(type === 5) {
-                for(let i=0; i<5; i++) bullets.push({x:x+(i-2)*10, y, vx:0, vy:-20, dmg:dmg, color});
+                for(let i=0; i<5; i++) bullets.push({x:x+(i-2)*15, y, vx:0, vy:-20, dmg:dmg, color});
             }
         }
 
         function triggerLevelUp() {
-            state = 'LEVELUP';
+            state = 'LEVELUP'; // ゲームループ（update）は止まるが描画（draw）は継続
             player.level++; player.exp = 0; player.maxExp += 5;
             document.getElementById('ui-level').innerText = player.level;
+            
             const container = document.getElementById('skill-container'); container.innerHTML = "";
             const skills = [...skillPool].sort(()=>0.5-Math.random()).slice(0, 3);
             skills.forEach(s => {
                 const div = document.createElement('div'); div.className = 'skill-card';
-                div.innerHTML = `<b>${s.name}</b><p>${s.desc}</p>`;
+                div.innerHTML = `<div class="skill-title">${s.name}</div><p>${s.desc}</p>`;
                 div.onclick = () => {
-                    if(s.id==='multi') player.stats.multi++; if(s.id==='power') player.stats.power+=10;
-                    if(s.id==='orbit') player.stats.orbit++; if(s.id==='speed') player.stats.speed+=0.5;
-                    if(s.id==='magnet') player.stats.magnet+=50; if(s.id==='heal') player.hp=player.maxHp;
-                    state = 'PLAYING'; document.getElementById('screen-levelup').classList.add('hidden'); gameLoop();
+                    if(s.id==='multi') player.stats.multi++; 
+                    if(s.id==='power') player.stats.power+=10;
+                    if(s.id==='orbit') player.stats.orbit++; 
+                    if(s.id==='speed') player.stats.speed+=0.5;
+                    if(s.id==='magnet') player.stats.magnet+=50; 
+                    if(s.id==='heal') player.curHp = player.maxHp;
+                    state = 'PLAYING'; 
+                    document.getElementById('screen-levelup').classList.add('hidden'); 
                 };
                 container.appendChild(div);
             });
             document.getElementById('screen-levelup').classList.remove('hidden');
         }
 
-        function draw() {
+        function drawGame() {
             ctx.fillStyle = "#050510"; ctx.fillRect(0,0,W,H);
-            // 敵
+            
+            // 敵・ボス
             enemies.forEach(e => {
-                ctx.fillStyle = e.invincible ? "#555" : (e.type==='boss'?"red":"white");
-                ctx.beginPath(); ctx.arc(e.x, e.y, e.type==='boss'?50:15, 0, 7); ctx.fill();
-                if(e.type==='boss') {
-                    ctx.fillStyle="red"; ctx.fillRect(e.x-50, e.y-70, 100*(e.hp/e.max), 8);
-                }
+                ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, Math.PI*2); ctx.fill();
             });
-            // プレイヤー
-            ctx.fillStyle = player.color; ctx.beginPath(); ctx.arc(player.x, player.y, 15, 0, 7); ctx.fill();
-            if(saveData.awakened.includes(player.id)) { ctx.strokeStyle="#f0f"; ctx.lineWidth=3; ctx.stroke(); }
-            // 弾・ジェム
-            bullets.forEach(b => { ctx.fillStyle=b.color||"#ff0"; ctx.beginPath(); ctx.arc(b.x, b.y, b.size||5, 0, 7); ctx.fill(); });
-            gems.forEach(g => { ctx.fillStyle="#0f0"; ctx.beginPath(); ctx.arc(g.x, g.y, 6, 0, 7); ctx.fill(); });
-            orbits.forEach(o => { ctx.fillStyle="#0ff"; ctx.beginPath(); ctx.arc(o.x, o.y, 8, 0, 7); ctx.fill(); });
-            if(partner) { ctx.fillStyle="#f0f"; ctx.beginPath(); ctx.arc(partner.x, partner.y, 15, 0, 7); ctx.fill(); }
+            if(boss) {
+                ctx.fillStyle = "#ff0044"; ctx.beginPath(); ctx.arc(boss.x, boss.y, boss.size, 0, Math.PI*2); ctx.fill();
+                // ボスHPバー
+                ctx.fillStyle="red"; ctx.fillRect(boss.x-60, boss.y-80, 120*(boss.hp/boss.max), 10);
+                ctx.strokeStyle="white"; ctx.strokeRect(boss.x-60, boss.y-80, 120, 10);
+            }
+
+            // 弾・ジェム・バリア
+            bullets.forEach(b => { ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(b.x, b.y, b.size||6, 0, Math.PI*2); ctx.fill(); });
+            gems.forEach(g => { ctx.fillStyle="#00ffcc"; ctx.beginPath(); ctx.arc(g.x, g.y, 5, 0, Math.PI*2); ctx.fill(); });
+            orbits.forEach(o => { ctx.fillStyle="#ffcc00"; ctx.beginPath(); ctx.arc(o.x, o.y, 8, 0, Math.PI*2); ctx.fill(); });
+
+            // パートナー（Firebase情報）
+            if(partner) {
+                ctx.fillStyle = partner.color || "#555"; ctx.beginPath(); ctx.arc(partner.x, partner.y, 15, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle="white"; ctx.font="12px sans-serif"; ctx.fillText(partner.name, partner.x-20, partner.y-25);
+            }
+
+            // 自分
+            ctx.fillStyle = player.color; ctx.beginPath(); ctx.arc(player.x, player.y, 15, 0, Math.PI*2); ctx.fill();
+            if(saveData.awakened.includes(player.id)) { ctx.strokeStyle="#ff00ff"; ctx.lineWidth=3; ctx.stroke(); }
+            
+            // 自分のHPバー
+            ctx.fillStyle="#0f0"; ctx.fillRect(player.x-20, player.y+20, 40*(player.curHp/player.maxHp), 5);
         }
 
-        function endLevel() {
-            state = 'RESULT'; showScreen('screen-result');
-            document.getElementById('res-coins').innerText = scoreCoins;
-            saveData.coins += scoreCoins;
-            if(isHost) remove(ref(db, `rooms/${roomId}`));
-            const canAwk = !saveData.awakened.includes(player.id) && scoreCoins > 1000;
+        function endLevel(isClear) {
+            state = 'RESULT'; 
+            showScreen('screen-result');
+            
+            document.getElementById('res-title').innerText = isClear ? "BOSS KILLED!" : "TIME UP / GAME OVER";
+            document.getElementById('res-title').style.color = isClear ? "#00ffcc" : "red";
+            
+            // 報酬加算
+            const bonus = isClear ? 5000 : 0;
+            const totalCoins = scoreCoins + bonus;
+            document.getElementById('res-coins').innerText = totalCoins + (isClear ? " (Boss Bonus +5000!)" : "");
+            
+            saveData.coins += totalCoins;
+            
+            // 覚醒チェック（ボス討伐成功＆未覚醒の場合）
+            const canAwk = isClear && !saveData.awakened.includes(player.id);
             if(canAwk) {
                 document.getElementById('awaken-section').classList.remove('hidden');
                 document.getElementById('btn-awaken').onclick = () => {
-                    if(saveData.coins < 30000) return alert("コイン不足");
-                    saveData.coins -= 30000; saveData.awakened.push(player.id);
+                    if(saveData.coins < 30000) return alert("コインが足りません！");
+                    saveData.coins -= 30000; 
+                    saveData.awakened.push(player.id);
+                    saveGame();
                     document.getElementById('awaken-section').classList.add('hidden');
+                    alert("✨ 覚醒完了！ ✨\n" + player.name + " が真の力を解放しました！");
                 };
+            } else {
+                document.getElementById('awaken-section').classList.add('hidden');
             }
+            
+            saveGame();
+            if(isHost) remove(ref(db, `rooms/${roomId}`)); // ルーム解散
         }
 
         function showScreen(id) {
@@ -363,6 +483,7 @@
         document.getElementById('btn-back-home').onclick = openHome;
         window.onmousemove = e => { targetPos.x = e.clientX; targetPos.y = e.clientY; };
         window.ontouchmove = e => { targetPos.x = e.touches[0].clientX; targetPos.y = e.touches[0].clientY; };
+
     </script>
 </body>
 </html>
